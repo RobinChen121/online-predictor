@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+    <meta charset="utf-8"/>
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="theme-color" content="#000000"/>
+    <meta
+            name="description"
+            content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png"/>
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json"/>
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>Welcome to Dr Zhen Chen's predictor</title>
+
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement(
+                {
+                    pageLanguage: "en",
+                    includedLanguages: "en,zh-CN,zh-TW,ja,ko,de,ru,fr,es,it,pt,hi,ar,fa",
+                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                },
+                "google_translate_element", // google translator div name
+            );
+        }
+    </script>
+    <script
+            type="text/javascript"
+            src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+    ></script>
+
+    <script>
+        // 更改谷歌翻译框显示的语言
+        setTimeout(() => {
+            //.VIpgJd-ZVi9od-xl07Ob-lTBxed：这是一个由谷歌自动生成的特定类名。它通常指向翻译小组件中那个可点击的链接元素 (<a>)
+            let langLink = document.querySelector(".VIpgJd-ZVi9od-xl07Ob-lTBxed"); // <a> 元素
+            // 在 <a> 标签内部查找第一个 <span>。谷歌通常把当前的语言名称（如 "English" 或 "中文"）放在这个 <span> 里
+            let langSpan = langLink ? langLink.querySelector("span") : null; // 获取第一个 <span>
+
+            if (!langSpan) return;
+
+            // 1️⃣ 读取 localStorage，恢复用户上次选择的语言
+            let savedLang = localStorage.getItem("selectedLanguage") || "EN"; // 默认 "En"
+            langSpan.innerText = savedLang;
+
+            // 2️⃣ 监听 <span> 的变化
+            let observer = new MutationObserver(() => {
+                // 不再循环 mutations，直接获取最终态
+                let newLang = langSpan.innerText.trim();
+                if (newLang && newLang !== "En") {
+                    localStorage.setItem("selectedLanguage", newLang);
+                }
+            });
+
+            // 监听 <span> 内部的文本变化
+            observer.observe(langSpan, {
+                childList: true,     // 观察子节点变动
+                subtree: true,       // 观察所有后代节点（非常重要，因为文字可能嵌套在深层）
+                characterData: true, // 观察节点内容变动
+            });
+        }, 1000); // 延迟 0.5 秒，确保 Google 翻译插件加载完成
+    </script>
+
+</head>
+<body>
+<noscript>You need to enable JavaScript to run this app.</noscript>
+<div id="root"></div>
+<!--
+  This HTML file is a template.
+  If you open it directly in the browser, you will see an empty page.
+
+  You can add webfonts, meta tags, or analytics to this file.
+  The build step will place the bundled scripts into the <body> tag.
+
+  To begin the development, run `npm start` or `yarn start`.
+  To create a production bundle, use `npm run build` or `yarn build`.
+-->
+</body>
+</html>

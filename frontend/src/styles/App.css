@@ -1,0 +1,263 @@
+/* ---------------------------------------------------------
+   基础定义与变量控制
+   通过 CSS 变量（Variables）实现主题切换。只需要改变父级类名，
+   内部所有引用了变量的组件颜色都会自动更新。
+   --------------------------------------------------------- */
+:root {
+    /* 浅色模式：温暖的沙滩色 */
+    --bg-color: #fcfaf8; /* 暖白色背景 */
+    --container-bg: #ffffff;
+    --text-main: #433422; /* 深棕黑文字，比纯黑暖很多 */
+    --text-sec: #8d8172;
+    --primary-color: #a68b6d; /* 核心：低饱和度的亚麻色 */
+    --header-bg: rgba(252, 250, 248, 0.8);
+    --border-color: #edeae6;
+}
+
+.dark {
+    /* 深色模式：黑曜石暖调 */
+    --bg-color: #1c1917; /* 带暖感的黑 */
+    --container-bg: #292524; /* 炭灰色 */
+    --text-main: #f5f5f4;
+    --text-sec: #a8a29e;
+    --primary-color: #d6d3d1; /* 亮暖灰 */
+    --header-bg: rgba(28, 25, 23, 0.8);
+    --border-color: #44403c;
+}
+
+/* ---------------------------------------------------------
+   布局样式 (Layout)
+   --------------------------------------------------------- */
+body {
+    top: 0 !important; /* 避免谷歌翻译弹出东西下浮 */
+    position: static !important;
+}
+
+.ant-layout {
+    min-height: 100vh; /* 保证页面至少撑满整个屏幕高度 */
+    background: var(--bg-color); /* 应用主题背景色 */
+    transition: all 0.3s ease; /* 切换深浅色模式时的平滑过渡动画 */
+    /* 优先使用更现代的无衬线字体 */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+
+/* 外层：负责全屏背景、底边框、固定顶部 */
+.app-header {
+    width: 100%; /* 宽度 100% 充满屏幕 */
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 0 !important; /* 清除 Ant Design 默认 padding */
+    backdrop-filter: blur(10px);
+    background: var(--header-bg) !important;
+    border-bottom: 2px solid var(--border-color); /* 现在边框会横跨全屏了 */
+    height: 64px;
+    display: flex; /* 这里的 flex 是为了让内层容器居中 */
+    justify-content: center; /* 内容居中 */
+}
+
+/* 内层容器：负责内容宽度限制和左右布局 */
+.header-container {
+    width: 100%;
+    max-width: 1000px; /* 这里控制内容宽度 */
+    display: flex; /* 内部开启弹性布局 */
+    justify-content: space-between; /* Logo 在左，菜单在右 */
+    align-items: center;
+    padding: 0 40px; /* 内容离边框的呼吸感 */
+    height: 100%; /* 撑满 Header 高度 */
+}
+
+.header-left .header-logo {
+    color: var(--text-main);
+    font-size: 1.2rem; /* 字体大小 */
+    font-weight: 700; /* 字体加粗 */
+    letter-spacing: -0.5px; /* 紧凑的字间距，更具设计感 */
+    /* 渐变色文字效果，这会覆盖文字的原来颜色 */
+    background: linear-gradient(90deg, var(--primary-color), #818cf8);
+    -webkit-background-clip: text; /* 将背景裁剪至文字形状 */
+    -webkit-text-fill-color: transparent; /* 文字本身设为透明，显示出背景渐变色 */
+}
+
+.header-right {
+    display: flex; /* 菜单和按钮横向排列 */
+    align-items: center; /* 垂直居中 */
+    gap: 20px; /* 元素之间的间距 */
+}
+
+/* 去掉 Ant Design Menu 组件自带的背景边框，使其更简约 */
+.ant-menu {
+    background: transparent !important; /* 强制背景透明 */
+    border-bottom: none !important; /* 去掉默认的底部实线 */
+    /*line-height: 64px; !* 与 Header 高度保持一致 *!*/
+}
+
+/* ---------------------------------------------------------
+   内容区域 (Content)
+   --------------------------------------------------------- */
+/* 扩展容器，适应三栏布局 */
+.app-content-fluid {
+    padding: 24px 50px;
+    min-height: calc(100vh - 128px);
+}
+
+/* 卡片样式美化 */
+.side-card, .main-card, .plot-card {
+    background: var(--container-bg) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+.dark .side-card, .dark .main-card {
+    border: 1px solid #44403c !important;
+}
+
+/* *********************
+   按钮设置
+*/
+.run-button-gradient {
+    background: linear-gradient(135deg, #a68b6d 0%, #8b7355 100%) !important;
+    border: none !important;
+    height: 50px !important;
+    font-weight: bold !important;
+}
+
+/* ---------------------------------------------------------
+   结果显示区 (Result)
+   --------------------------------------------------------- */
+.result-container {
+    margin-top: 40px; /* 结果区与上方的间距 */
+    padding-top: 30px; /* 结果内部的顶距 */
+    border-top: 1px dashed var(--border-color); /* 虚线分割，暗示这是生成的 */
+}
+
+.result-container h3 {
+    color: var(--text-main);
+    margin-bottom: 20px;
+}
+
+/* 针对 Plotly 图表的容器美化 */
+.js-plotly-plot {
+    border-radius: 12px; /* 图表容器圆角 */
+    overflow: hidden; /* 隐藏超出边界的内容 */
+    border: 1px solid var(--border-color); /* 为图表加一层细框 */
+}
+
+/* ---------------------------------------------------------
+   页脚与主题按钮
+   --------------------------------------------------------- */
+.app-footer {
+    text-align: center; /* 文字居中 */
+    color: var(--text-sec); /* 辅助色 */
+    background: transparent !important; /* 背景透明 */
+    padding: 20px 0; /* 底部留白 */
+    border-top: 2px solid var(--border-color);
+}
+
+/* 太阳/月亮切换按钮的样式 */
+.theme-button {
+    color: var(--text-main) !important; /* 图标颜色适配 */
+    font-size: 1.2rem !important; /* 图标大小 */
+    display: flex; /* 居中对齐图标 */
+    align-items: center;
+    justify-content: center;
+    /* 特殊的回弹动画（弹簧感） */
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.theme-button:hover {
+    /* 稍微加大旋转角度到 20deg，配合 Tooltip 提示 */
+    transform: rotate(20deg) scale(1.15);
+    /* 悬停时图标颜色微微变亮，暗示可点击 */
+    color: var(--primary-color) !important;
+}
+
+/* 针对深色模式下的太阳图标，给它一个微弱的金光感 */
+.dark .theme-button:hover {
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+}
+/* ---------------------------------------------------------
+   8. 针对深色模式 (Dark Mode) 选中背景的深度定制
+   --------------------------------------------------------- */
+
+/* 修改深色模式下，菜单项被选中时的背景色 */
+.dark .ant-menu-dark.ant-menu-horizontal > .ant-menu-item-selected {
+    /*!* 核心：将蓝色背景改为极淡的暖木棕色透明层 *!*/
+    background-color: rgb(113, 113, 111) !important;
+
+    /* 或者如果你想要更极简的风格（完全去掉背景色），请取消下面这一行的注释： */
+    /* background-color: transparent !important;*/
+
+    border-radius: 1px; /* 给选中的背景加一点点圆角，显得不那么生硬 */
+    transition: all 0.3s ease;
+}
+
+/* 修改深色模式下，鼠标悬停（Hover）时的背景 */
+.dark .ant-menu-dark .ant-menu-item:hover {
+    background-color: rgba(166, 139, 109, 0.1) !important;
+    color: var(--primary-color) !important;
+}
+
+/* 移除 Ant Design 默认在选中时可能出现的蓝色发光阴影 (box-shadow) */
+.dark .ant-menu-item-selected {
+    box-shadow: none !important;
+}
+
+/* 确保文字在选中时使用我们定义的暖木色变量 */
+.dark .ant-menu-dark .ant-menu-item-selected {
+    color: var(--primary-color) !important;
+}
+
+/*****************************************/
+/* 谷歌翻译框设置*/
+.goog-te-gadget {
+    font-family: Roboto, "Open Sans", sans-serif !important;
+/* text-transform: uppercase;*/
+}
+
+.goog-te-gadget-simple {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(237, 230, 230, 0.5) !important;
+    padding: 8px !important;
+    border-radius: 4px !important;
+    font-size: 0.9rem !important; /* rem（root em）是一种相对单位，表示相对于 根元素 (<html>) 的 font-size */
+    line-height: 1rem !important;
+    display: inline-block;
+    cursor: pointer; /* 鼠标悬停时变成 手形（表示可点击）*/
+    zoom: 1;
+}
+
+#google_translate_element .goog-te-gadget {
+    display: inline-flex !important;
+    margin-right: 20px;
+}
+
+.goog-te-gadget-icon {
+    /* 更改谷歌翻译框外观 */
+    background-image: url(https://placehold.it/32) !important;
+    background-position: 0 0;
+    height: 0 !important;
+    width: 0 !important;
+    margin-right: 8px !important;
+    display: none;
+}
+
+/*!*不让翻译后显示谷歌的其他弹出框*!*/
+.VIpgJd-ZVi9od-ORHb-OEVmcd{
+    display: none !important;
+    /* add !important if required*/
+}
+
+.VIpgJd-ZVi9od-ORHb-OEVmcd.skiptranslate {
+    display: none !important;
+}
+.goog-gt-tt {
+    display: none !important;
+}
+
+/*文字在 class VIpgJd-ZVi9od-xl07Ob-lTBxed 下面的 span 标签下*/
+/*data-theme="dark" 是 属性选择器，它的作用是 只匹配那些 data-theme 属性值为 "dark" 的元素*/
+/*在 CSS 中，.（点号） 代表类名选择器*/
+[data-theme="dark"] .VIpgJd-ZVi9od-xl07Ob-lTBxed span {
+    color: white !important; /* 深色模式下改为白色 */
+}
