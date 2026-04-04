@@ -27,26 +27,15 @@ function App() {
     // 创建一个能被 React 监测到的数据仓库: 变动的数据集和数据修改函数
     const [tableData, setTableData] = useState(initialData);
 
+    const [headers, setHeaders] = useState(['A', 'B', 'C']);
+
     // --- 功能逻辑 ---
+    const toggleTheme = () => setDarkMode(!darkMode);
 
-    // 运行预测
-    const runPrediction = async () => {
-        const tableData = hotRef.current.hotInstance.getData();
-        const cleanData = tableData.filter(row => row[0] && row[1]);
-        if (cleanData.length === 0) return message.warning("请先输入有效数据！");
-
-        try {
-            const res = await fetch("http://127.0.0.1:8000/predict", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({data: cleanData}),
-            });
-            const json = await res.json();
-            setResult(json);
-            message.success("预测完成！");
-        } catch (error) {
-            message.error("预测请求失败，请检查后端服务。");
-        }
+    // 清除数据
+    const clearData = () => {
+        hotRef.current.hotInstance.loadData([['', '']]);
+        setResult(null);
     };
 
     // 可视化当前的输入数据（不运行预测模型）
@@ -85,13 +74,28 @@ function App() {
         message.success(`Successfully visualized ${cleanData.length} data points.`);
     };
 
-    // 清除数据
-    const clearData = () => {
-        hotRef.current.hotInstance.loadData([['', '']]);
-        setResult(null);
+    // 运行预测
+    const runPrediction = async () => {
+        const tableData = hotRef.current.hotInstance.getData();
+        const cleanData = tableData.filter(row => row[0] && row[1]);
+        if (cleanData.length === 0) return message.warning("请先输入有效数据！");
+
+        try {
+            const res = await fetch("http://127.0.0.1:8000/predict", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({data: cleanData}),
+            });
+            const json = await res.json();
+            setResult(json);
+            message.success("预测完成！");
+        } catch (error) {
+            message.error("预测请求失败，请检查后端服务。");
+        }
     };
 
-    const toggleTheme = () => setDarkMode(!darkMode);
+
+
 
     return (
         <Layout className={darkMode ? "dark" : "light"}>
@@ -124,11 +128,13 @@ function App() {
             </Header>
 
             <Content className="app-content-fluid">
-                {/* 使用 Ant Design Row 构建三栏布局 */}
+                 {/*使用 Ant Design Row 构建三栏布局 */}
+                {/* 三栏布局是通过 在一个 Row 容器内放置三个 Col 组件 来实现的*/}
+                {/* 里面的 24，24 分别表示水平间距与垂直间距*/}
                 <Row gutter={[24, 24]} align="top">
 
                     {/* 左侧：数据处理区 */}
-                    <Col xs={24} lg={5}>
+                    <Col xs={24} lg={5}> {/* xs, lg 是与屏幕相关的 */}
                         <Card title="Data Actions" className="side-card">
                             <Space orientation={"vertical"} style={{width: '100%'}}>
                                 <Button type={"primary"} className="run-button-gradient" block icon={<ImportOutlined/>}>Import Excel</Button>
@@ -155,7 +161,7 @@ function App() {
                                             setTableData(updatedData);
                                         }
                                     }}
-                                    colHeaders={['Date index', 'Value']}
+                                    colHeaders={['A', 'B']}
                                     rowHeaders={true}
                                     width="100%"
                                     height="400px"
