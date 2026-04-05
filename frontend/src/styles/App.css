@@ -9,27 +9,27 @@
    --------------------------------------------------------- */
 :root {
     /* 亮色模式：清爽的薰衣草与薄荷感 */
-    --bg-color: #fcfaff;         /* 极浅的紫色调背景，增加通透感 */
+    --bg-color: #fcfaff; /* 极浅的紫色调背景，增加通透感 */
     --container-bg: #ffffff;
-    --text-main: #2d264d;        /* 深紫灰文字，比纯黑更高级 */
-    --text-sec: #7e76a3;         /* 次要文字 */
-    --primary-color: #6d5995;    /* 核心：淡紫 (Violet 600) */
-    --accent-color: #06b6d4;     /* 辅助：清爽青 (Cyan 500) */
+    --text-main: #2d264d; /* 深紫灰文字，比纯黑更高级 */
+    --text-sec: #605e68; /* 次要文字 */
+    --primary-color: #6d5995; /* 核心：淡紫 (Violet 600) */
+    --accent-color: #06b6d4; /* 辅助：清爽青 (Cyan 500) */
     --header-bg: rgba(252, 250, 255, 0.8);
-    --border-color: #ede9fe;     /* 浅紫色边框 */
+    --border-color: #cac9cf; /* 浅紫色边框 */
     --card-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.05);
 }
 
 .dark {
     /* 深色模式：赛博深邃紫 */
-    --bg-color: #0f0a1e;         /* 极深紫黑色背景 */
-    --container-bg: #1a142e;     /* 深紫色卡片 */
+    --bg-color: #0f0a1e; /* 极深紫黑色背景 */
+    --container-bg: #1a142e; /* 深紫色卡片 */
     --text-main: #f5f3ff;
-    --text-sec: #94a3b8;
-    --primary-color: #a78bfa;    /* 亮紫色 */
-    --accent-color: #22d3ee;     /* 亮青色 */
+    --text-sec: #a5a6a8;
+    --primary-color: #a78bfa; /* 亮紫色 */
+    --accent-color: #22d3ee; /* 亮青色 */
     --header-bg: rgba(15, 10, 30, 0.8);
-    --border-color: #2e264d;
+    --border-color: #cbc2ea;
     --card-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
 }
 
@@ -49,6 +49,16 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+.notice-text {
+    color: var(--text-main) !important;
+    text-align: center;
+}
+
+.divider {
+    margin: 12px 0;
+    /* 1. 颜色与粗细 */
+    border-top: 2px solid var(--text-main) !important; /* 加粗到 2px，颜色用稍微明显的浅灰 */
+}
 
 /* 外层：负责全屏背景、底边框、固定顶部 */
 .app-header {
@@ -73,7 +83,9 @@ body {
     justify-content: space-between; /* Logo 在左，菜单在右 */
     align-items: center;
     padding: 0 40px; /* 内容离边框的呼吸感 */
-    height: 100%; /* 撑满 Header 高度 */
+    /*height: 100%; !* 撑满 Header 高度 *!*/
+    /*height: 48px;         !* 修改为你想要的高度 *!*/
+    /*line-height: 48px;    !* 必须让行高等于高度，否则文字/图标无法垂直居中 *!*/
 }
 
 .header-left .header-logo {
@@ -94,7 +106,19 @@ body {
     gap: 20px; /* 元素之间的间距 */
 }
 
-/* --- 调整 Menu 选中时的颜色 --- */
+/* --- 调整 Menu  --- */
+.ant-menu {
+    min-width: 200px; /* 避免被其他元素积压 */
+}
+
+.ant-menu-horizontal {
+    background-color: transparent;
+}
+
+/* menu item 字体颜色*/
+span.ant-menu-title-content {
+    color: var(--text-main) !important;;
+}
 
 
 /* ---------------------------------------------------------
@@ -102,7 +126,7 @@ body {
    --------------------------------------------------------- */
 /* 扩展容器，适应三栏布局 */
 .app-content-fluid {
-    padding: 24px 50px;
+    padding: 0px 20px;
     min-height: calc(100vh - 128px);
 }
 
@@ -110,9 +134,41 @@ body {
 .side-card, .main-card, .plot-card {
     background: var(--container-bg) !important;
     border-radius: 12px !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    border-color: var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
     color: var(--text-main);
+    background: var(--bg-color) !important;
 }
+
+.main-card {
+    background: var(--container-bg) !important;
+    border-radius: 12px !important;
+    border-color: var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    color: var(--text-main);
+    background: var(--bg-color) !important;
+}
+
+.plot-card {
+    background: var(--container-bg) !important;
+    border-radius: 12px !important;
+    border-color: var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    color: var(--text-main);
+    background: var(--bg-color) !important;
+}
+
+.excel-editor-container {
+    align-content: center;
+}
+
+
+/* 针对标题文字容器的高度进行微调 */
+.main-card .ant-card-head-title {
+    padding: 0; /* 减少上下内边距 */
+    font-size: 15px; /* 可选：稍微缩小字号让比例更协调 */
+}
+
 /* 统一修改这三个 Card 的标题颜色 */
 .side-card .ant-card-head-title,
 .main-card .ant-card-head-title,
@@ -120,33 +176,49 @@ body {
     color: var(--text-main) !important; /* 使用 !important 确保覆盖 AntD 默认颜色 */
     font-weight: 600; /* 顺便微调一下粗细，让颜色表现更好 */
     text-align: center;
+
 }
 
 .dark .side-card, .dark .main-card {
-    border: 1px solid #44403c !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* 1. 确保 Card 容器没有内部间隙 */
+.main-card .ant-card-body {
+    padding: 23px 5px 0 0;
+    /*overflow: hidden;      !* 防止内容溢出产生双滚动条 *!*/
+    /*border-radius: 0 0 8px 8px; !* 保持底部圆角一致 *!*/
+}
+
+/* 让表头背景色更高级一点 */
+.custom-handsontable thead th {
+    font-weight: 600;
+}
+
+/* Handsontable 的行标题通常在 .ht_clone_left 这个层级里 */
+.custom-handsontable .ht_clone_left th {
+    font-weight: 600 !important;
 }
 
 /* *********************
    host table 设置
 */
-/* 确保 Handsontable 的背景也是透明或跟随主题的 */
-.custom-handsontable,
-.handsontable,
-.htElement-container {
-    background-color: transparent !important;
+.excel-editor-container {
+    /* 减少与标题的间距 */
+    margin-top: -22px; /* 使用负 Margin 向上提升，根据需要调整数值 */
 }
 
 /* 调整行号和列标的颜色，防止它们在深色模式下变成纯黑不可见 */
-.dark .handsontable th, tr, td{
+.dark .handsontable th, tr, td {
     background-color: var(--bg-color) !important;
     color: var(--text-main) !important;
-    border-color: var(--border-color) !important;
+    /*border-color: var(--border-color) !important;*/
 }
 
 /* *********************
    按钮设置
 */
-.run-button-gradient {
+.common-button {
     /* 亮色模式下是深灰黑，深色模式下会根据变量变成亮灰 */
     background: var(--primary-color) !important;
     color: var(--bg-color) !important; /* 文字颜色与背景反转 */
@@ -158,11 +230,24 @@ body {
     box-shadow: none !important; /* 去掉发光的蓝色阴影 */
 }
 
-.run-button-gradient:hover {
+.table-button {
+    /* 亮色模式下是深灰黑，深色模式下会根据变量变成亮灰 */
+    background: var(--primary-color) !important;
+    color: var(--bg-color) !important; /* 文字颜色与背景反转 */
+    /*border: none !important;*/
+    height: 36px !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    box-shadow: none !important; /* 去掉发光的蓝色阴影 */
+}
+
+.common-button:hover, .table-button:hover {
     transform: none;
     opacity: 0.9;
     filter: brightness(1.2);
 }
+
 
 /* ---------------------------------------------------------
    结果显示区 (Result)
@@ -181,8 +266,13 @@ body {
 /* 针对 Plotly 图表的容器美化 */
 .js-plotly-plot {
     border-radius: 12px; /* 图表容器圆角 */
-    overflow: hidden; /* 隐藏超出边界的内容 */
-    border: 1px solid var(--border-color); /* 为图表加一层细框 */
+    margin: 0px !important;
+    border: 0px solid var(--border-color); /* 为图表加一层细框 */
+}
+
+.plot-card{
+    height: 350px;
+    padding: 0 !important;
 }
 
 /* ---------------------------------------------------------
@@ -192,7 +282,7 @@ body {
     text-align: center; /* 文字居中 */
     color: var(--text-sec); /* 辅助色 */
     background: transparent !important; /* 背景透明 */
-    padding: 20px 0; /* 底部留白 */
+    padding: 10px; /* 底部留白 */
     border-top: 2px solid var(--border-color);
 }
 
@@ -218,6 +308,7 @@ body {
 .dark .theme-button:hover {
     filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
 }
+
 /* ---------------------------------------------------------
    8. 针对深色模式 (Dark Mode) 选中背景的深度定制
    --------------------------------------------------------- */
@@ -254,7 +345,7 @@ body {
 /* 谷歌翻译框设置*/
 .goog-te-gadget {
     font-family: Roboto, "Open Sans", sans-serif !important;
-/* text-transform: uppercase;*/
+    /* text-transform: uppercase;*/
 }
 
 .goog-te-gadget-simple {
@@ -285,7 +376,7 @@ body {
 }
 
 /*!*不让翻译后显示谷歌的其他弹出框*!*/
-.VIpgJd-ZVi9od-ORHb-OEVmcd{
+.VIpgJd-ZVi9od-ORHb-OEVmcd {
     display: none !important;
     /* add !important if required*/
 }
@@ -293,6 +384,7 @@ body {
 .VIpgJd-ZVi9od-ORHb-OEVmcd.skiptranslate {
     display: none !important;
 }
+
 .goog-gt-tt {
     display: none !important;
 }
@@ -302,4 +394,19 @@ body {
 /*在 CSS 中，.（点号） 代表类名选择器*/
 .VIpgJd-ZVi9od-xl07Ob-lTBxed span {
     color: var(--text-main) !important; /* 深色模式下改为白色 */
+}
+
+/****************
+ about.md
+ */
+/* 覆盖 github-markdown-css 的默认背景和字体 */
+.markdown-body {
+    background-color: transparent !important; /* 强制背景透明 */
+    font-size: 18px !important; /* 修改你想要的字体大小 */
+    color: var(--text-main); /* 继承父元素的文字颜色 */
+}
+
+.markdown-body a {
+    color: var(--primary-color) !important;
+    /*text-decoration: underline; !* 显示下划线 *!*/
 }

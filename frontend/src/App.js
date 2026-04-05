@@ -1,38 +1,82 @@
 import React, {useState, useRef} from "react";
-import Plot from "react-plotly.js";
-import {Layout, Menu, Button, Tooltip, Row, Col, Card, Divider, Space, message} from "antd";
-import {SunOutlined, MoonOutlined, ImportOutlined, PlayCircleOutlined, DeleteOutlined} from "@ant-design/icons";
-import {HotTable} from '@handsontable/react';
+import {Layout, Menu, Button, Tooltip, Space, message} from "antd";
+import {SunOutlined, MoonOutlined} from "@ant-design/icons";
 import Handsontable from 'handsontable';
 import {registerAllModules} from 'handsontable/registry';
-import {BarChartOutlined, /* ... 其他图标 */} from "@ant-design/icons"; // 记得引入图标
+import { useNavigate, Routes, Route, Navigate } from "react-router-dom";
+// 导入分出去的组件，即js文件
+import Dashboard from './dashboard';
+import AboutPage from './about';
 
 // 注意：如果 import 报错，请使用此路径或在 index.html 引入 CDN
 // import 'handsontable/dist/handsontable.full.css';
 import './styles/App.css';
 
 registerAllModules();
-const {Header, Content, Footer} = Layout;
+
+
+const {Header, Footer} = Layout;
 
 function App() {
+    const navigate = useNavigate();
+
     const [result, setResult] = useState(null);
-    const [darkMode, setDarkMode] = useState(true);
+    // 右边小括号的内容为左边第一个变量，传递到函数的值，函数名为第二个元素
+    const [darkMode, setDarkMode] = useState(false);
     const hotRef = useRef(null);
 
     // 初始数据
-    const initialData = [['2024-01-01', 100, '', ''], ['2024-01-02', 120, '',], ['', '', '', ''],];
-    // 创建一个能被 React 监测到的数据仓库: 变动的数据集和数据修改函数
+    const initialData = [
+        ['1', 20, '', ''],
+        ['2', 27, '', ''],
+        ['3', 25, '', ''],
+        ['4', 22, '', ''],
+        ['5', 18, '', ''],
+        ['6', 21, '', ''],
+        ['7', 26, '', ''],
+        ['8', 19, '', ''],
+        ['9', 16, '', ''],
+        ['10', 28, '', ''],
+        ['11', 25, '', ''],
+        ['12', 24, '', ''],
+        ['13', 17, '', ''],
+        ['14', 23, '', ''],
+        ['15', 27, '', '']
+    ];// 创建一个能被 React 监测到的数据仓库: 变动的数据集和数据修改函数
+    const initialColumns = ['Week', 'Calls', '', ''];
     const [tableData, setTableData] = useState(initialData);
+    const [columns, setColumns] = useState(initialColumns);
 
     const defaultItems = Handsontable.plugins.ContextMenu.DEFAULT_ITEMS;
 
     // --- 功能逻辑 ---
-    const toggleTheme = () => setDarkMode(!darkMode);
+    const toggleTheme = () => {
+        setDarkMode(!darkMode);
+    }
 
-    // 清除数据
-    const clearData = () => {
-        hotRef.current.hotInstance.loadData([['', '']]);
-        setResult(null);
+
+    const resetData = () => {
+        // initialData 是你最初定义的那个空数组或默认数组
+        setTableData([...initialData]);
+        setColumns([...initialColumns]);
+    };
+
+    const handleSetHeader = () => {
+        const hotInstance = hotRef.current.hotInstance;
+        const currentData = hotInstance.getData(); // 获取当前表格所有数据
+
+        if (currentData.length > 0) {
+            const newHeaders = currentData[0]; // 取第一行作为新标题
+            const remainingData = currentData.slice(1); // 剩下的是数据部分
+
+            // 更新状态或直接更新 Handsontable 设置
+            hotInstance.updateSettings({
+                colHeaders : newHeaders,
+                data: remainingData
+            });
+            setTableData(remainingData);
+            setColumns(newHeaders);
+        }
     };
 
     // 可视化当前的输入数据（不运行预测模型）
@@ -92,7 +136,10 @@ function App() {
             <div className="header-container">
                 {/* 左侧：Logo */}
                 <div className="header-left">
-                    <div className="header-logo">Dr Zhen Chen's Forecaster</div>
+                    <div className="header-logo"
+                         style={{ cursor: 'pointer' }}   // 鼠标悬停显示手型，提示可点击
+                         onClick={() => navigate("/")}   // 点击回到 Dashboard
+                     >Dr Zhen Chen's Forecaster</div>
                 </div>
 
                 {/* --- 重点：重新找回的翻译插件容器 --- */}
@@ -103,10 +150,15 @@ function App() {
 
                 <div className="header-right">
                     <Space size="large">
-                        <Menu theme={darkMode ? "dark" : "light"} mode="horizontal" defaultSelectedKeys={["1"]}>
-                            <Menu.Item key="1">Dashboard</Menu.Item>
-                            <Menu.Item key="2">About</Menu.Item>
+                        <Menu theme={darkMode ? "dark" : "light"} mode="horizontal"
+                            // 使用路径作为 key，刷新页面也能正确高亮
+                              selectedKeys={[window.location.pathname]}
+                              onClick={({ key }) => navigate(key)}
+                        >
+                            <Menu.Item key="/">Dashboard</Menu.Item>
+                            <Menu.Item key="/about">About</Menu.Item>
                         </Menu>
+
                         <Tooltip title="Switch Theme">
                             <Button type="text" onClick={toggleTheme} className={"theme-button"}
                                     icon={darkMode ? <SunOutlined/> : <MoonOutlined/>}/>
@@ -116,159 +168,26 @@ function App() {
             </div>
         </Header>
 
-        <Content className="app-content-fluid">
-            {/*使用 Ant Design Row 构建三栏布局 */}
-            {/* 三栏布局是通过 在一个 Row 容器内放置三个 Col 组件 来实现的*/}
-            {/* 里面的 24，24 分别表示水平间距与垂直间距*/}
-            <Row gutter={[24, 24]} align="top">
-
-                {/* 左侧：数据处理区 */}
-                <Col xs={24} lg={5}> {/* xs, lg 是与屏幕相关的 */}
-                    <Card title="Data Actions" className="side-card">
-                        <Space orientation={"vertical"} style={{width: '100%'}}>
-                            <Button type={"primary"} className="run-button-gradient" block icon={<ImportOutlined/>}>Import
-                                Excel</Button>
-                            <Divider style={{margin: '12px 0'}}/>
-                            <Button type={"primary"} className="run-button-gradient" block danger
-                                    icon={<DeleteOutlined/>} onClick={clearData}>
-                                Clear All
-                            </Button>
-                        </Space>
-                    </Card>
-                </Col>
-
-                {/* 中间：Handsontable 显示区 */}
-                <Col xs={24} lg={14}>
-                    <Card title="Data Editor (Excel Style)" className="main-card">
-                        <div className="excel-editor-container">
-                            <HotTable
-                                ref={hotRef}
-                                colHeaders={['A', 'B']}
-                                data={tableData}
-                                afterChange={(changes) => {
-                                    if (changes) {
-                                        // 当用户粘贴或修改数据时，立即更新 tableData 状态
-                                        // 这样重新渲染时，数据就能保持住
-                                        const updatedData = hotRef.current.hotInstance.getData();
-                                        setTableData(updatedData);
-                                    }
-                                }}
-                                rowHeaders={true}
-                                width="100%"
-                                height="400px"
-                                colWidths={[250, 150]}
-                                manualColumnResize={true}
-                                licenseKey="non-commercial-and-evaluation"
-                                selectionMode="multiple"
-                                dragToFill={true}
-                                copyPaste={true}
-                                // contextMenu={true}
-                                className="custom-handsontable"
-                                contextMenu={{
-                                    items: {
-                                        ...defaultItems.reduce((acc, key) => {
-                                            acc[key] = {};
-                                            return acc;
-                                        }, {}),
-
-                                        "---------": {},
-
-                                        rename_header: {
-                                            name: "Rename column head",
-                                            hidden: function () {
-                                                const selected = this.getSelectedLast();
-                                                if (!selected) return true;
-                                                const row = selected[0];
-                                                return row !== -1; // 只在表头显示
-                                            },
-                                            callback: function (key, selection) {
-                                                const col = selection[0].start.col;
-                                                const headers = this.getColHeader();
-
-                                                const newName = prompt("New column head", headers[col]);
-                                                if (newName) {
-                                                    headers[col] = newName;
-                                                    this.updateSettings({colHeaders: headers});
-                                                }
-                                            }
-                                        }
-                                    }
-                                }}
-
-                            />
-                        </div>
-                    </Card>
-                </Col>
-
-                {/* 右侧：预测控制区 */}
-                <Col xs={24} lg={5}>
-                    <Card title="Analysis" className="side-card">
-                        <p style={{fontSize: '12px', color: '#888'}}>
-                            Ensure your data has at least 2 points for basic trend analysis.
-                        </p>
-                        <Space orientation={"vertical"} style={{width: '100%'}}>
-                            <Button
-                                type="primary"
-                                block
-                                // size="large"
-                                icon={<BarChartOutlined/>}
-                                onClick={plotInputData} // 绑定新的处理函数
-                                className="run-button-gradient"
-                            >
-                                Visualize Input
-                            </Button>
-                            <Button
-                                type="primary"
-                                block
-                                size="large"
-                                icon={<PlayCircleOutlined/>}
-                                onClick={runPrediction}
-                                className="run-button-gradient"
-                            >
-                                Run Predictor
-                            </Button>
-                        </Space>
-                    </Card>
-                </Col>
-            </Row>
-
-            {/* 下方：全屏展示预测图表 */}
-            {result && (<Row style={{marginTop: '24px'}}>
-                <Col span={24}>
-                    <Card title="Visualization" bordered={false} className="plot-card">
-                        <div style={{display: 'flex', justifyContent: 'center'}}>
-                            <Plot
-                                data={[{
-                                    x: result.time,
-                                    y: result.value,
-                                    type: "scatter",
-                                    mode: "lines+markers",
-                                    name: "Actual",
-                                }, {
-                                    x: result.time,
-                                    y: result.pred,
-                                    type: "scatter",
-                                    mode: "lines",
-                                    name: "Predicted",
-                                    line: {dash: 'dot', color: '#818cf8'}
-                                },]}
-                                layout={{
-                                    autosize: true,
-                                    width: 1000,
-                                    height: 500,
-                                    paper_bgcolor: 'transparent',
-                                    plot_bgcolor: 'transparent',
-                                    font: {color: darkMode ? '#eee' : '#333'},
-                                    margin: {l: 50, r: 50, b: 50, t: 50}
-                                }}
-                                useResizeHandler={true}
-                                style={{width: "100%", height: "100%"}}
-                            />
-                        </div>
-                    </Card>
-                </Col>
-            </Row>)}
-        </Content>
+        {/* 2. 核心修复：Routes 应该放在这里，控制主体内容的切换 */}
+        <Routes>
+            <Route path="/" element={
+                <Dashboard
+                    darkMode={darkMode}
+                    plotInputData={plotInputData}
+                    hotRef={hotRef}
+                    tableData={tableData}
+                    setTableData={setTableData} // <--- 确保这里也写了传递逻辑
+                    columns={columns}
+                    handleSetHeader={handleSetHeader}
+                    resetData={resetData}
+                    defaultItems={defaultItems}
+                    runPrediction={runPrediction}
+                    result={result}
+                />
+            } />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />  {/* 所有未匹配的都跳到 Dashboard */}
+        </Routes>
 
         <Footer className="app-footer">An online forecaster ©Dr Zhen Chen 2026</Footer>
     </Layout>);
