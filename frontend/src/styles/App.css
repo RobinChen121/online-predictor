@@ -52,6 +52,8 @@ body {
 .notice-text {
     color: var(--text-main) !important;
     text-align: center;
+    font-size: 12px;
+    margin-top: -20px;
 }
 
 .divider {
@@ -126,7 +128,7 @@ span.ant-menu-title-content {
    --------------------------------------------------------- */
 /* 扩展容器，适应三栏布局 */
 .app-content-fluid {
-    padding: 0px 20px;
+    padding: 0 5px;
     min-height: calc(100vh - 128px);
 }
 
@@ -150,12 +152,14 @@ span.ant-menu-title-content {
 }
 
 .plot-card {
-    background: var(--container-bg) !important;
+    /*background: var(--container-bg) !important;*/
     border-radius: 12px !important;
     border-color: var(--border-color);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
     color: var(--text-main);
     background: var(--bg-color) !important;
+    height: 350px;
+    padding: 0 !important;
 }
 
 .excel-editor-container {
@@ -205,7 +209,9 @@ span.ant-menu-title-content {
 */
 .excel-editor-container {
     /* 减少与标题的间距 */
-    margin-top: -22px; /* 使用负 Margin 向上提升，根据需要调整数值 */
+    margin-top: -23px; /* 使用负 Margin 向上提升，根据需要调整数值 */
+    position: relative; /* 减少这个元素的层级，从而下拉时不覆盖网站 header */
+    z-index: 1; /* 减少这个元素的层级，从而下拉时不覆盖网站 header */
 }
 
 /* 调整行号和列标的颜色，防止它们在深色模式下变成纯黑不可见 */
@@ -248,6 +254,7 @@ span.ant-menu-title-content {
     filter: brightness(1.2);
 }
 
+/* 针对 Ant Design model 没有深色背景选项，需要自己慢慢调 */
 
 /* ---------------------------------------------------------
    结果显示区 (Result)
@@ -268,11 +275,6 @@ span.ant-menu-title-content {
     border-radius: 12px; /* 图表容器圆角 */
     margin: 0px !important;
     border: 0px solid var(--border-color); /* 为图表加一层细框 */
-}
-
-.plot-card{
-    height: 350px;
-    padding: 0 !important;
 }
 
 /* ---------------------------------------------------------

@@ -3,59 +3,55 @@ import {Layout, Row, Col, Card, Space, Button, Divider} from "antd";
 import {HotTable} from '@handsontable/react';
 import Plot from "react-plotly.js";
 import {ImportOutlined, BarChartOutlined, PlayCircleOutlined} from "@ant-design/icons";
+import Handsontable from "handsontable";
 
 const {Content} = Layout;
+const defaultItems = Handsontable.plugins.ContextMenu.DEFAULT_ITEMS;
 
 const Dashboard = ({
                        darkMode, plotInputData, hotRef, tableData,
                        setTableData,
                        columns,
-                       handleSetHeader, resetData, defaultItems, runPrediction, result
+                       handleSetHeader,
+                       resetData,
+                       handleVisualizeClick,
+                       runPrediction,
+                       result
                    }) => {
     return (
         <Content className="app-content-fluid">
-            {/* 主容器：两栏布局，因为有两个 col */}
-            <Row gutter={[24, 24]} align="top">
+            {/* 主容器：三栏布局，因为有三个 col */}
+            {/* 三个lg的总数应该是24*/}
+            <Row gutter={[12, 24]} align="top">
 
                 {/* 左侧栏：操作控制区 (合并原来的两个小 Card) */}
-                <Col xs={24} lg={6}>
+                <Col xs={24} lg={4}>
                     {/*内部使用 <Space orientation="vertical"> 将 Data Actions 卡片和 Analysis 卡片垂直堆叠*/}
                     {/* size 表示 里面 card 的间距 */}
                     <Space orientation="vertical" size={24} style={{width: '100%'}}>
 
                         {/* 原左侧：Data Actions */}
                         <Card title="Data Actions" className="side-card">
+                            <p className={"notice-text"}>
+                                You can paste your data directly into the right table or
+                                input data from Excel.
+                            </p>
                             <Space orientation="vertical" style={{width: '100%'}}>
-                                <p style={{fontSize: '12px'}} className={"notice-text"}>
-                                    You can paste your data directly into the right table.
-                                </p>
-                                <Space orientation="horizontal" style={{display: "flex",
-                                    justifyContent: "space-between"}}>
-                                    <Button  onClick={handleSetHeader} className="table-button">
-                                        Set first row as headers
-                                    </Button>
-                                    <Button  onClick={resetData} className="table-button">
-                                        Reset
-                                    </Button>
-                                </Space>
-                                <Divider className={"divider"}/>
-                                <p style={{fontSize: '12px'}} className={"notice-text"}>
-                                    You can also input data from Excel.
-                                </p>
-                                <Button type={"primary"}
-                                        block
-                                        size="large"
-                                        className="common-button"
-                                        icon={<ImportOutlined/>}>
+                                <Button
+                                    // type={"primary"}
+                                    block
+                                    // size="large"
+                                    className="common-button"
+                                    icon={<ImportOutlined/>}>
                                     Import from Excel
                                 </Button>
-                                <Divider className={"divider"}/>
+                                {/*<Divider/>*/}
                                 <Button
                                     type="primary"
                                     block
-                                    size="large"
+                                    // size="large"
                                     icon={<BarChartOutlined/>}
-                                    onClick={plotInputData}
+                                    onClick={handleVisualizeClick}
                                     className="common-button"
                                 >Visualize Input</Button>
                             </Space>
@@ -65,9 +61,9 @@ const Dashboard = ({
                         <Card title="Analysis" className="side-card">
                             <Space orientation="vertical" style={{width: '100%'}}>
                                 <Button
-                                    type="primary"
+                                    // type="primary"
                                     block
-                                    size="large"
+                                    // size="large"
                                     icon={<PlayCircleOutlined/>}
                                     onClick={runPrediction}
                                     className="common-button"
@@ -80,25 +76,15 @@ const Dashboard = ({
                     </Space>
                 </Col>
 
-                {/* 右侧栏：数据展示与绘图区 (宽度一致且上下对齐) */}
-                <Col xs={24} lg={18}>
+                {/*中间栏*/}
+                <Col xs={24} lg={16}>
                     {/*内部使用 <Space orientation="vertical"> 将 Data Actions 卡片和 Analysis 卡片垂直堆叠*/}
                     <Space orientation="vertical" size={0} style={{width: '100%'}}>
-
-                        {/* 上方：Handsontable */}
+                        {/* 左侧表格部分 */}
                         <Card
                             // title="Data Editor (Excel Style)"
                             className="main-card"
-                            // extra={
-                            //     <Space>
-                            //         <Button size="small" onClick={handleSetHeader} className={"table-button"}>
-                            //             Use first row as headers
-                            //         </Button>
-                            //         <Button size="small" danger onClick={resetData} className={"table-button"}>
-                            //             Reset
-                            //         </Button>
-                            //     </Space>
-                            // }
+                            style={{flex: 1, minWidth: 0}} // 关键点：flex: 1 让它撑满，minWidth: 0 防止 Flex 溢出
                         >
                             <div className="excel-editor-container">
                                 <HotTable
@@ -113,6 +99,7 @@ const Dashboard = ({
                                     }}
                                     rowHeaders={true}
                                     height="262px"
+                                    width="100%"
                                     licenseKey="non-commercial-and-evaluation"
                                     selectionMode="multiple"
                                     dragToFill={true}
@@ -156,20 +143,7 @@ const Dashboard = ({
                                 className="plot-card">
                                 <div style={{display: 'flex', justifyContent: 'center'}}>
                                     <Plot
-                                        data={[{
-                                            x: result.time,
-                                            y: result.value,
-                                            type: "scatter",
-                                            mode: "lines+markers",
-                                            name: "Actual",
-                                        }, {
-                                            x: result.time,
-                                            y: result.pred,
-                                            type: "scatter",
-                                            mode: "lines",
-                                            name: "Predicted",
-                                            line: {dash: 'dot', color: '#6772e3'}
-                                        }]}
+                                        data={result.data}
                                         layout={{
                                             autosize: true,
                                             showlegend: true,
@@ -179,14 +153,17 @@ const Dashboard = ({
                                             font: {color: darkMode ? '#eee' : '#333'},
                                             margin: {t: 30, r: 30, b: 50, l: 60},
                                             xaxis: {
-                                                title: {text: "Time index"},
+                                                // 修正：增加 text 键，并提供后备默认值
+                                                title: {
+                                                    text: result.xAxisName || "Time index"
+                                                },
                                                 showline: true,
                                                 linecolor: darkMode ? '#d5cece' : '#302e2e',
                                                 linewidth: 2,
                                                 autorange: true,
                                             },
                                             yaxis: {
-                                                title: {text: "Data Value"},
+                                                title: {text: "Value"},
                                                 showline: true,
                                                 linecolor: darkMode ? '#d5cece' : '#302e2e',
                                                 linewidth: 2,
@@ -194,12 +171,33 @@ const Dashboard = ({
                                             }
                                         }}
                                         useResizeHandler={true}
-                                        // style={{width: "100%", height: "100%"}}
+                                        style={{width: "100%", height: "100%"}}
                                     />
                                 </div>
                             </Card>
                         )}
                     </Space>
+                </Col>
+
+                {/*右侧栏*/}
+                <Col xs={24} lg={4}>
+                    <Card className="side-card">
+                        <Space orientation="vertical" style={{width: '100%'}}>
+                            <Button block onClick={handleSetHeader}
+                                // size={"large"}
+                                    className="common-button"
+                            >
+                                Set first row as headers
+                            </Button>
+                            {/*<Divider/>*/}
+                            <Button block onClick={resetData}
+                                // size={"large"}
+                                    className="common-button"
+                            >
+                                Reset to default data
+                            </Button>
+                        </Space>
+                    </Card>
                 </Col>
             </Row>
         </Content>
