@@ -262,7 +262,7 @@ forecast.tolist()
                             <div className="header-logo"
                                  style={{cursor: 'pointer'}}   // 鼠标悬停显示手型，提示可点击
                                  onClick={() => navigate("/")}   // 点击回到 Dashboard
-                            >Dr Zhen Chen's Forecaster
+                            >Dr Zhen Chen's Predictor
                             </div>
                         </div>
 
