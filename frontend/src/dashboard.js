@@ -144,6 +144,7 @@ const Dashboard = ({
                                 <div style={{display: 'flex', justifyContent: 'center'}}>
                                     <Plot
                                         data={result.data}
+                                        revision={Date.now()} // 关键：强制 Plotly 识别更新
                                         layout={{
                                             autosize: true,
                                             showlegend: true,
@@ -161,6 +162,7 @@ const Dashboard = ({
                                                 linecolor: darkMode ? '#d5cece' : '#302e2e',
                                                 linewidth: 2,
                                                 autorange: true,
+                                                zeroline: false,
                                             },
                                             yaxis: {
                                                 title: {text: "Value"},
@@ -168,7 +170,8 @@ const Dashboard = ({
                                                 linecolor: darkMode ? '#d5cece' : '#302e2e',
                                                 linewidth: 2,
                                                 autorange: true,
-                                            }
+                                                zeroline: false,
+                                            },
                                         }}
                                         useResizeHandler={true}
                                         style={{width: "100%", height: "100%"}}

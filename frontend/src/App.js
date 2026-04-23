@@ -1,5 +1,18 @@
-import React, {useState, useRef} from "react";
-import {Layout, Menu, Button, Tooltip, Space, message, Modal, Select, Form, ConfigProvider, theme, Divider} from "antd";
+import React, {useState, useRef, useEffect} from "react";
+import {
+    Layout,
+    Menu,
+    Button,
+    Tooltip,
+    Space,
+    message,
+    Modal,
+    Select,
+    Form,
+    ConfigProvider,
+    theme,
+    Divider
+} from "antd";
 import {SunOutlined, MoonOutlined} from "@ant-design/icons";
 import {registerAllModules} from 'handsontable/registry';
 import {useNavigate, Routes, Route, Navigate} from "react-router-dom";
@@ -28,8 +41,16 @@ function App() {
     // 关闭弹窗的统一方法
     const closeModal = () => setActiveModal(null);
     const [columnOptions, setColumnOptions] = useState([]); // 存储列名
-    const [xAxis, setXAxis] = useState(null);               // 横轴选中的列
+    const [xAxis, setXAxis] = useState('default_index');               // 横轴选中的列
     const [yAxes, setYAxes] = useState([]);                 // 纵轴选中的列（多选）
+
+    useEffect(() => {
+        // useEffect 的作用是当网页渲染之后的操作
+        if (columnOptions.length > 1 && yAxes.length === 0) {
+            setYAxes([columnOptions[1].value]);
+        }
+    }, [columnOptions, yAxes]);
+
 
     // 初始数据
     const initialData = [
@@ -208,12 +229,15 @@ forecast.tolist()
         // 构造 Plotly 需要的数据格式
         const traces = yIdxArray.map(yIdx => {
             return {
-                // 第一个参数：当前元素的值（value)
-                // 第二个参数：当前元素的索引（index）
-                // 第三个参数：原数组本身（array
                 x: cleanData.map((_, index) =>
-                    xIdx === 'default_index' ? index + 1 : cleanData[index][xIdx]
+                    // xIdx === 'default_index' ? index + 1 : cleanData[index][xIdx]
+                    {
+                        // 使用 String() 包裹，确保无论哪种情况返回的都是字符串
+                        const val = xIdx === 'default_index' ? (index + 1) : cleanData[index][xIdx];
+                        return String(val);
+                    }
                 ),
+
                 y: cleanData.map(row => {
                     const val = row[yIdx];
                     // 尝试转换为数字，如果转换失败则保持原样（针对非数值轴）
@@ -224,6 +248,7 @@ forecast.tolist()
                 mode: 'lines+markers'
             };
         });
+
 
         // 获取选中的 X 轴列名
         const selectedXName = xIdx === 'default_index'
@@ -310,6 +335,7 @@ forecast.tolist()
                     >
                         <p>Select X-Axis (Horizontal):</p>
                         <Select
+                            value={xAxis}
                             style={{width: '75%'}}
                             placeholder="Choose one column"
                             options={[
@@ -323,6 +349,7 @@ forecast.tolist()
                     <div>
                         <p>Select Y-Axis (Verticals):</p>
                         <Select
+                            // value={yAxes}
                             mode="multiple" // 允许多选
                             style={{width: '75%'}}
                             placeholder="Choose one or more columns"
@@ -350,7 +377,11 @@ forecast.tolist()
                         <Form.Item label="Select time index">
                             <Select
                                 placeholder="Choose one column"
-                                options={[{label: 'Default (1, 2, 3...)', value: 'default_index'}, ...columnOptions]}
+                                value={xAxis}
+                                options={[{
+                                    label: 'Default (1, 2, 3...)',
+                                    value: 'default_index'
+                                }, ...columnOptions]}
                                 onChange={setXAxis}
                             />
                         </Form.Item>
@@ -385,7 +416,8 @@ forecast.tolist()
                         />
                     }/>
                     <Route path="/about" element={<AboutPage/>}/>
-                    <Route path="*" element={<Navigate to="/" replace/>}/> {/* 所有未匹配的都跳到 Dashboard */}
+                    <Route path="*" element={
+                        <Navigate to="/" replace/>}/> {/* 所有未匹配的都跳到 Dashboard */}
                 </Routes>
 
                 <Footer className="app-footer">An online forecaster ©Dr Zhen Chen 2026</Footer>
