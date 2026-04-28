@@ -205,7 +205,7 @@ const Dashboard = ({
                         </Card>
 
                         <Card className="side-card parameter" title={"Parameters"}>
-                            <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                            <div style={{display: 'none', alignItems: 'center', gap: '10px'}}>
                                 <span>α:</span>
                                 <div style={{flex: 1}}> {
                                     <Slider
@@ -213,7 +213,7 @@ const Dashboard = ({
                                         max={1}
                                         step={0.1}
                                         marks={{0: '0', 1: '1'}}
-                                        // onChange={onChange}
+                                        onChange={handleExponentialSmoothClick}
                                         value={0.5}
                                     />
                                 }

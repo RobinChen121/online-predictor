@@ -154,7 +154,7 @@ function App() {
         setActiveModal('exponential-smoothing');
     };
 
-    const handleExponentialSmooth = async (yAxes) => {
+    const handleExponentialSmooth = async (yAxes, alpha=0.5) => {
         const hot = hotRef.current.hotInstance;
         // 从 Handsontable 实例获取最新的列头
         const headers = hot.getColHeader();
@@ -198,11 +198,14 @@ function App() {
 
             input_data = arrayToVectorDouble(numericData);
             const model = new instance.Predictor(input_data);
-            let output = model.singleSmooth(0.5);
-            output = vectorDoubleToArray(output);
+            let raw_output = model.singleSmooth(alpha);
+            let output = vectorDoubleToArray(raw_output);
             // console.log(output);
+            plotInputData("default_index", [yAxes], output);
             input_data.delete();
+            raw_output.delete();
             model.delete();
+
 
         } catch (error) {
             message.error("Prediction failed.");
@@ -210,7 +213,7 @@ function App() {
     };
 
     // 可视化当前的输入数据（不运行预测模型）
-    const plotInputData = (xIdx, yIdxArray) => {
+    const plotInputData = (xIdx = "default_index", yIdxArray, predict_array) => {
         if (xIdx === null || !yIdxArray || yIdxArray.length === 0) {
             message.warning("Please select both X and Y columns").then(r => '');
             return;
@@ -224,7 +227,9 @@ function App() {
         // 数据清洗：过滤掉空的无效行
         const cleanData = tableData.filter(row => {
                 // 检查 X 轴列是否有值
+                // row["default_index"] 会返回 undefined, 它不等于 null, 也不是空值
                 const hasX = row[xIdx] !== null && row[xIdx] !== '';
+                // console.log(row[xIdx]);
                 // 检查所有选中的 Y 轴列是否有值 (使用 every 确保全都有值，或用 some 只要有一个有值)
                 const hasY = yIdxArray.some(yIdx => row[yIdx] !== null && row[yIdx] !== '');
 
@@ -240,11 +245,13 @@ function App() {
         // 构造 Plotly 需要的数据格式
         const traces = yIdxArray.map(yIdx => {
             return {
+                // js map 中，第一个参数是当前值，第二个是当前索引
                 x: cleanData.map((_, index) =>
                     // xIdx === 'default_index' ? index + 1 : cleanData[index][xIdx]
                     {
                         // 使用 String() 包裹，确保无论哪种情况返回的都是字符串
-                        const val = xIdx === 'default_index' ? (index + 1) : cleanData[index][xIdx];
+                        // const val = xIdx === 'default_index' ? (index + 1) : cleanData[index][xIdx];
+                        const val = index + 1;
                         return String(val);
                     }
                 ),
@@ -259,6 +266,27 @@ function App() {
                 mode: 'lines+markers'
             };
         });
+
+        // 处理 predict_array (假设它是一个数值数组)
+        // 若 predict_array 没有在调用函数时赋值，则它是 undefined, if (predict_array) 返回 false
+        if (predict_array && predict_array.length > 0) {
+            // const lastOriginalX = cleanData.length; // 默认索引情况
+
+            // 构造预测数据的 X 轴：接在原始数据索引之后
+            // js map 中，第一个参数是当前值，第二个是当前索引
+            const predictX = predict_array.map((_, i) => String(i + 1));
+
+            // 添加预测数据的 Trace, Trace 可以通过 push 添加
+            traces.push({
+                x: predictX,
+                y: predict_array.map(val => isNaN(parseFloat(val)) ? val : parseFloat(val)),
+                name: 'Forecast',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { dash: 'dot', color: 'red' }, // 使用虚线和红色区分预测值
+                marker: { symbol: 'diamond' }
+            });
+        }
 
 
         // 获取选中的 X 轴列名
@@ -385,17 +413,17 @@ function App() {
                         // labelCol={{ span: 6 }}   // 文字占多宽
                         // wrapperCol={{ span: 18 }} // 下拉框占多宽
                     >
-                        <Form.Item label="Select time index">
-                            <Select
-                                placeholder="Choose one column"
-                                value={xAxis}
-                                options={[{
-                                    label: 'Default (1, 2, 3...)',
-                                    value: 'default_index'
-                                }, ...columnOptions]}
-                                onChange={setXAxis}
-                            />
-                        </Form.Item>
+                        {/*<Form.Item label="Select time index">*/}
+                        {/*    <Select*/}
+                        {/*        placeholder="Choose one column"*/}
+                        {/*        value={xAxis}*/}
+                        {/*        options={[{*/}
+                        {/*            label: 'Default (1, 2, 3...)',*/}
+                        {/*            value: 'default_index'*/}
+                        {/*        }, ...columnOptions]}*/}
+                        {/*        onChange={setXAxis}*/}
+                        {/*    />*/}
+                        {/*</Form.Item>*/}
 
                         <Form.Item label="Select data for prediction">
                             <Select
