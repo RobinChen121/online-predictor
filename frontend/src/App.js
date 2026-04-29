@@ -53,6 +53,8 @@ function App() {
     const [columns, setColumns] = useState(initialColumns);
     const [alpha, setAlpha] = useState(0.5);
     const [isCardVisible, setCardVisible] = useState(false);
+    const [RMSE, setRMSE] = useState(null);
+    const [MAE, setMAE] = useState(null);
 
 
     useEffect(() => {
@@ -104,10 +106,6 @@ function App() {
     }, [columnOptions, yAxes]);
 
 
-
-
-
-
     // --- 功能逻辑 ---
     const toggleTheme = () => {
         setDarkMode(!darkMode);
@@ -115,8 +113,41 @@ function App() {
 
     const resetData = () => {
         // initialData 是你最初定义的那个空数组或默认数组
+        // ... 是扩展运算符，将数组拆开再创建一个新数组
         setTableData([...initialData]);
         setColumns([...initialColumns]);
+    };
+
+    const computeRMSE = (raw_data, predict_data) => {
+        const n = raw_data.length;
+
+        let sumSquaredError = 0;
+
+        for (let i = 0; i < n; i++) {
+            const actual = parseFloat(raw_data[i]);
+            const predicted = parseFloat(predict_data[i]);
+
+            const error = actual - predicted;
+            sumSquaredError += error * error;
+        }
+
+        const rmse = Math.sqrt(sumSquaredError / n);
+        setRMSE(rmse);
+    };
+
+    const computeMAE = (raw_data, predict_data) => {
+        const n = raw_data.length;
+
+        let absoluteError = 0;
+
+        for (let i = 0; i < n; i++) {
+            const actual = parseFloat(raw_data[i]);
+            const predicted = parseFloat(predict_data[i]);
+            absoluteError += Math.abs(actual - predicted);
+        }
+
+        const mae = Math.sqrt(absoluteError / n);
+        setMAE(mae);
     };
 
     // 更改表头名字
@@ -163,9 +194,6 @@ function App() {
     };
 
     const handleExponentialSmooth = async () => {
-
-
-
         const hot = hotRef.current.hotInstance;
         // 从 Handsontable 实例获取最新的列头
         const headers = hot.getColHeader();
@@ -218,9 +246,9 @@ function App() {
             raw_output.delete();
             model.delete();
 
+            computeRMSE(numericData, output);
+            computeMAE(numericData, output);
             setCardVisible(true);
-
-
         } catch (error) {
             message.error("Prediction failed.");
         }
@@ -327,7 +355,7 @@ function App() {
                 algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
                 token: {
                     // 试试这个紫色，或者换成你喜欢的任何颜色
-                    colorPrimary: darkMode ? '#440bb5' : '#6d5995',
+                    colorPrimary: darkMode ? '#9e81d5' : '#311765',
                 },
             }}
         >
@@ -456,20 +484,28 @@ function App() {
                 <Routes>
                     <Route path="/" element={
                         <Dashboard
-                            darkMode={darkMode}
-                            hotRef={hotRef}
-                            tableData={tableData}
-                            setTableData={setTableData} // <--- 确保这里也写了传递逻辑
-                            columns={columns}
-                            handleSetHeader={handleSetHeader}
-                            resetData={resetData}
-                            handleVisualizeClick={handleVisualizeClick}
-                            handleExponentialSmoothClick={handleExponentialSmoothClick}
-                            handleExponentialSmooth={handleExponentialSmooth}
-                            plot_result={plot_result}
-                            alpha = {alpha}
-                            setAlpha = {setAlpha}
-                            isCardVisible={isCardVisible}
+                            darkMode ={darkMode}
+                            table={{
+                                hotRef,
+                                tableData,
+                                setTableData,
+                                columns,
+                                handleSetHeader,
+                                resetData,
+                            }}
+                            actions={{
+                                handleVisualizeClick,
+                                handleExponentialSmoothClick,
+                                handleExponentialSmooth,
+                            }}
+                            chart={{
+                                plot_result,
+                                alpha,
+                                setAlpha,
+                                isCardVisible,
+                                RMSE,
+                                MAE
+                            }}
                         />
                     }/>
                     <Route path="/about" element={<AboutPage/>}/>

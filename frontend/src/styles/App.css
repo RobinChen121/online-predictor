@@ -290,6 +290,7 @@ span.ant-menu-title-content {
     border-radius: 12px; /* 图表容器圆角 */
     margin: 0px !important;
     border: 0px solid var(--border-color); /* 为图表加一层细框 */
+    color: var(--text-main);
 }
 
 /* ---------------------------------------------------------

@@ -10,19 +10,32 @@ const defaultItems = Handsontable.plugins.ContextMenu.DEFAULT_ITEMS;
 
 // 传递 app.js 中的函数和变量
 const Dashboard = ({
-                       darkMode, hotRef, tableData,
-                       setTableData,
-                       columns,
-                       handleSetHeader,
-                       resetData,
-                       handleVisualizeClick,
-                       handleExponentialSmoothClick,
-                       handleExponentialSmooth,
-                       plot_result,
-                       alpha,
-                       setAlpha,
-                       isCardVisible,
+                       darkMode, table,
+                       actions, chart
                    }) => {
+    // 从 table 里取出所需的变量或函数
+    const {
+        hotRef,
+        tableData,
+        setTableData,
+        columns,
+        handleSetHeader,
+        resetData,
+    } = table;
+    const {
+        handleVisualizeClick,
+        handleExponentialSmoothClick,
+        handleExponentialSmooth
+    } = actions;
+    const {
+        plot_result,
+        alpha,
+        setAlpha,
+        isCardVisible,
+        RMSE,
+        MAE
+    } = chart;
+
     return (
         <Content className="app-content-fluid">
             {/* 主容器：三栏布局，因为有三个 col */}
@@ -159,7 +172,7 @@ const Dashboard = ({
                                             height: 320, // 稍微调整高度以适应布局
                                             paper_bgcolor: 'transparent',
                                             plot_bgcolor: 'transparent',
-                                            font: {color: darkMode ? '#eee' : '#333'},
+                                            font: {color: darkMode ? "#fff": "#000" },
                                             margin: {t: 30, r: 30, b: 50, l: 60},
                                             xaxis: {
                                                 // 修正：增加 text 键，并提供后备默认值
@@ -167,7 +180,7 @@ const Dashboard = ({
                                                     text: plot_result.xAxisName || "Time index"
                                                 },
                                                 showline: true,
-                                                linecolor: darkMode ? '#d5cece' : '#302e2e',
+                                                linecolor: darkMode ? "#fff" : "#69666a",
                                                 linewidth: 2,
                                                 autorange: true,
                                                 zeroline: false,
@@ -175,7 +188,7 @@ const Dashboard = ({
                                             yaxis: {
                                                 title: {text: "Value"},
                                                 showline: true,
-                                                linecolor: darkMode ? '#d5cece' : '#302e2e',
+                                                linecolor: darkMode ? "#fff" : "#69666a",
                                                 linewidth: 2,
                                                 autorange: true,
                                                 zeroline: false,
@@ -237,8 +250,9 @@ const Dashboard = ({
                             <Card className="side-card erros" title={"Forecasting errors"}>
                                 {/* 局部样式控制*/}
                                 {/* 这是 <span> 最核心的用法。它本身没有任何默认样式（没有边距、没有加粗），它的存在就是为了让你能给某一段文字加上 CSS*/}
-                                <span style={{fontWeight: "bold"}}>RMSE: {alpha}</span>
-
+                                <span style={{fontWeight: "bold"}}>RMSE:</span> {RMSE.toFixed(2)}
+                                <br/>
+                                <span style={{fontWeight: "bold"}}>MAE:</span> {MAE.toFixed(2)}
                             </Card>
                         )}
                     </Space>

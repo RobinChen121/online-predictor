@@ -4,3 +4,4 @@ website</a>.
 Milestones for this online predictor:
 
 - 2026/04/05: Established the basic structure of the website using React, Ant Design, and Handsontable, and implemented data visualization features.
+- 2026/04/29: Established the single exponential smoothing with a slider to change the value of alpha and the visualization.
