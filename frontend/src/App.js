@@ -18,9 +18,41 @@ registerAllModules(); // handsontable
 const {Header, Footer} = Layout;
 
 function App() {
+    // navigate 可以控制跳转到其他页面
     const navigate = useNavigate();
 
+    // 初始数据
+    const initialData = [
+        ['1', 20, ''],
+        ['2', 27, ''],
+        ['3', 25, ''],
+        ['4', 22, ''],
+        ['5', 18, ''],
+        ['6', 21, ''],
+        ['7', 26, ''],
+        ['8', 19, ''],
+        ['9', 16, ''],
+        ['10', 28, ''],
+        ['11', 25, ''],
+        ['12', 24, '',],
+        ['13', 17, ''],
+        ['14', 23, ''],
+        ['15', 27, '']
+    ];// 创建一个能被 React 监测到的数据仓库: 变动的数据集和数据修改函数
+    const initialColumns = ['Week', 'Calls', '', ''];
+
     const [instance, setInstance] = useState(null);
+    const [plot_result, setResult] = useState(null);
+    // 右边小括号的内容为左边第一个变量，传递到函数的值，函数名为第二个元素
+    const [darkMode, setDarkMode] = useState(false);
+    const [activeModal, setActiveModal] = useState(null); // 存储当前的 Modal ID
+    const [columnOptions, setColumnOptions] = useState([]); // 存储列名
+    const [xAxis, setXAxis] = useState('default_index');               // 横轴选中的列
+    const [yAxes, setYAxes] = useState([]); // 纵轴选中的列（多选）
+    const [tableData, setTableData] = useState(initialData);
+    const [columns, setColumns] = useState(initialColumns);
+    const [alpha, setAlpha] = useState(0.5);
+
 
     useEffect(() => {
         async function init() {
@@ -56,17 +88,10 @@ function App() {
         init();
     }, []);
 
-    const [result, setResult] = useState(null);
-    // 右边小括号的内容为左边第一个变量，传递到函数的值，函数名为第二个元素
-    const [darkMode, setDarkMode] = useState(false);
     const hotRef = useRef(null);
 
-    const [activeModal, setActiveModal] = useState(null); // 存储当前的 Modal ID
     // 关闭弹窗的统一方法
     const closeModal = () => setActiveModal(null);
-    const [columnOptions, setColumnOptions] = useState([]); // 存储列名
-    const [xAxis, setXAxis] = useState('default_index');               // 横轴选中的列
-    const [yAxes, setYAxes] = useState([]);                 // 纵轴选中的列（多选）
 
     useEffect(() => {
         // useEffect 的作用是当网页渲染之后的操作
@@ -77,27 +102,8 @@ function App() {
     }, [columnOptions, yAxes]);
 
 
-    // 初始数据
-    const initialData = [
-        ['1', 20, ''],
-        ['2', 27, ''],
-        ['3', 25, ''],
-        ['4', 22, ''],
-        ['5', 18, ''],
-        ['6', 21, ''],
-        ['7', 26, ''],
-        ['8', 19, ''],
-        ['9', 16, ''],
-        ['10', 28, ''],
-        ['11', 25, ''],
-        ['12', 24, '',],
-        ['13', 17, ''],
-        ['14', 23, ''],
-        ['15', 27, '']
-    ];// 创建一个能被 React 监测到的数据仓库: 变动的数据集和数据修改函数
-    const initialColumns = ['Week', 'Calls', '', ''];
-    const [tableData, setTableData] = useState(initialData);
-    const [columns, setColumns] = useState(initialColumns);
+
+
 
 
     // --- 功能逻辑 ---
@@ -154,7 +160,7 @@ function App() {
         setActiveModal('exponential-smoothing');
     };
 
-    const handleExponentialSmooth = async (yAxes, alpha=0.5) => {
+    const handleExponentialSmooth = async () => {
         const hot = hotRef.current.hotInstance;
         // 从 Handsontable 实例获取最新的列头
         const headers = hot.getColHeader();
@@ -172,8 +178,7 @@ function App() {
             return;
         }
 
-        const targetColIndex = yAxes;
-        const rawData = hot.getDataAtCol(targetColIndex);
+        const rawData = hot.getDataAtCol(yAxes[0]);
 
         // 过滤掉非数字或空值，转为浮点数
         const numericData = rawData
@@ -205,6 +210,9 @@ function App() {
             input_data.delete();
             raw_output.delete();
             model.delete();
+
+            const target = document.querySelector(".side-card.parameter")
+            target.style.setProperty("display", "flex");
 
 
         } catch (error) {
@@ -293,7 +301,7 @@ function App() {
         const selectedXName = xIdx === 'default_index'
             ? "Time index"
             : (columnOptions.find(opt => opt.value === xIdx)?.label || "Time index");
-        // 更新你的 result 状态，让 Plot 组件渲染
+        // 更新你的 plot_result 状态，让 Plot 组件渲染
         setResult({
             isCustomPlot: true,
             data: traces,
@@ -451,7 +459,9 @@ function App() {
                             resetData={resetData}
                             handleVisualizeClick={handleVisualizeClick}
                             handleExponentialSmoothClick={handleExponentialSmoothClick}
-                            result={result}
+                            handleExponentialSmooth={handleExponentialSmooth}
+                            plot_result={plot_result}
+                            setAlpha = {setAlpha}
                         />
                     }/>
                     <Route path="/about" element={<AboutPage/>}/>

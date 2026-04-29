@@ -17,7 +17,9 @@ const Dashboard = ({
                        resetData,
                        handleVisualizeClick,
                        handleExponentialSmoothClick,
-                       result
+                       handleExponentialSmooth,
+                       plot_result,
+                       setAlpha
                    }) => {
     return (
         <Content className="app-content-fluid">
@@ -137,14 +139,14 @@ const Dashboard = ({
                             </div>
                         </Card>
 
-                        {/* 下方：可视化结果 (只有在 result 存在时显示) */}
-                        {result && (
+                        {/* 下方：可视化结果 (只有在 plot_result 存在时显示) */}
+                        {plot_result && (
                             <Card
                                 // title="Visualization"
                                 className="plot-card">
                                 <div style={{display: 'flex', justifyContent: 'center'}}>
                                     <Plot
-                                        data={result.data}
+                                        data={plot_result.data}
                                         revision={Date.now()} // 关键：强制 Plotly 识别更新
                                         layout={{
                                             autosize: true,
@@ -157,7 +159,7 @@ const Dashboard = ({
                                             xaxis: {
                                                 // 修正：增加 text 键，并提供后备默认值
                                                 title: {
-                                                    text: result.xAxisName || "Time index"
+                                                    text: plot_result.xAxisName || "Time index"
                                                 },
                                                 showline: true,
                                                 linecolor: darkMode ? '#d5cece' : '#302e2e',
@@ -213,8 +215,9 @@ const Dashboard = ({
                                         max={1}
                                         step={0.1}
                                         marks={{0: '0', 1: '1'}}
-                                        onChange={handleExponentialSmoothClick}
-                                        value={0.5}
+                                        onChange={(value) => setAlpha(value)}
+                                        onChangeComplete={(value) => handleExponentialSmooth(value)} // 只有松开鼠标时才执行计算
+                                        // value={alpha}
                                     />
                                 }
                                 </div>
