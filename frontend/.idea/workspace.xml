@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ba3b7fe9-cabc-40ee-9f5b-3ce7460ef29e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/ThemeContext.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/dashboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/dashboard.js" afterDir="false" />
@@ -13,6 +14,13 @@
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="JavaScript File" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
@@ -76,6 +84,12 @@
       <workItem from="1777388724416" duration="3345000" />
       <workItem from="1777392568669" duration="4633000" />
       <workItem from="1777402462467" duration="304000" />
+      <workItem from="1777465605846" duration="301000" />
+      <workItem from="1777465909443" duration="315000" />
+      <workItem from="1777466227320" duration="83000" />
+      <workItem from="1777466312425" duration="1117000" />
+      <workItem from="1777467433437" duration="160000" />
+      <workItem from="1777467595471" duration="5471000" />
     </task>
     <servers />
   </component>
@@ -87,12 +101,12 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/src/App.js</url>
-          <line>227</line>
+          <line>241</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/src/App.js</url>
-          <line>207</line>
+          <line>219</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>

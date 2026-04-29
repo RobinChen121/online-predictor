@@ -52,6 +52,7 @@ function App() {
     const [tableData, setTableData] = useState(initialData);
     const [columns, setColumns] = useState(initialColumns);
     const [alpha, setAlpha] = useState(0.5);
+    const [isCardVisible, setCardVisible] = useState(false);
 
 
     useEffect(() => {
@@ -86,6 +87,7 @@ function App() {
         }
 
         init();
+        // [] 表示根据什么变量的变化才生效
     }, []);
 
     const hotRef = useRef(null);
@@ -161,6 +163,9 @@ function App() {
     };
 
     const handleExponentialSmooth = async () => {
+
+
+
         const hot = hotRef.current.hotInstance;
         // 从 Handsontable 实例获取最新的列头
         const headers = hot.getColHeader();
@@ -170,7 +175,9 @@ function App() {
         }));
 
         setColumnOptions(options);
-        setActiveModal('exponential-smoothing');
+        if (!isCardVisible) {
+            setActiveModal('exponential-smoothing');
+        }
 
         // yAxes 存储的是被选中的列索引
         if (!yAxes) {
@@ -211,8 +218,7 @@ function App() {
             raw_output.delete();
             model.delete();
 
-            const target = document.querySelector(".side-card.parameter")
-            target.style.setProperty("display", "flex");
+            setCardVisible(true);
 
 
         } catch (error) {
@@ -309,7 +315,8 @@ function App() {
         });
 
         // 提供用户反馈
-        message.success(`Successfully visualized ${cleanData.length} data points.`).then(r => '');
+        if (!isCardVisible)
+            message.success(`Successfully visualized ${cleanData.length} data points.`).then(r => '');
     };
 
     return (
@@ -438,7 +445,7 @@ function App() {
                                 // mode="multiple"
                                 maxTagCount="responsive"
                                 options={columnOptions}
-                                onChange={setYAxes}
+                                onChange={(val) => setYAxes([val])}
                             />
                         </Form.Item>
                     </Form>
@@ -450,7 +457,6 @@ function App() {
                     <Route path="/" element={
                         <Dashboard
                             darkMode={darkMode}
-                            plotInputData={plotInputData}
                             hotRef={hotRef}
                             tableData={tableData}
                             setTableData={setTableData} // <--- 确保这里也写了传递逻辑
@@ -461,7 +467,9 @@ function App() {
                             handleExponentialSmoothClick={handleExponentialSmoothClick}
                             handleExponentialSmooth={handleExponentialSmooth}
                             plot_result={plot_result}
+                            alpha = {alpha}
                             setAlpha = {setAlpha}
+                            isCardVisible={isCardVisible}
                         />
                     }/>
                     <Route path="/about" element={<AboutPage/>}/>

@@ -10,7 +10,7 @@ const defaultItems = Handsontable.plugins.ContextMenu.DEFAULT_ITEMS;
 
 // 传递 app.js 中的函数和变量
 const Dashboard = ({
-                       darkMode, plotInputData, hotRef, tableData,
+                       darkMode, hotRef, tableData,
                        setTableData,
                        columns,
                        handleSetHeader,
@@ -19,7 +19,9 @@ const Dashboard = ({
                        handleExponentialSmoothClick,
                        handleExponentialSmooth,
                        plot_result,
-                       setAlpha
+                       alpha,
+                       setAlpha,
+                       isCardVisible,
                    }) => {
     return (
         <Content className="app-content-fluid">
@@ -87,7 +89,10 @@ const Dashboard = ({
                         <Card
                             // title="Data Editor (Excel Style)"
                             className="main-card"
-                            style={{flex: 1, minWidth: 0}} // 关键点：flex: 1 让它撑满，minWidth: 0 防止 Flex 溢出
+                            style={{
+                                flex: 1,
+                                minWidth: 0
+                            }} // 关键点：flex: 1 让它撑满，minWidth: 0 防止 Flex 溢出
                         >
                             <div className="excel-editor-container">
                                 <HotTable
@@ -206,23 +211,36 @@ const Dashboard = ({
                             </Space>
                         </Card>
 
-                        <Card className="side-card parameter" title={"Parameters"}>
-                            <div style={{display: 'none', alignItems: 'center', gap: '10px'}}>
-                                <span>α:</span>
+                        {isCardVisible && (
+                            <Card className="side-card parameter" title={"Parameters"}>
+                                {/* 局部样式控制*/}
+                                {/* 这是 <span> 最核心的用法。它本身没有任何默认样式（没有边距、没有加粗），它的存在就是为了让你能给某一段文字加上 CSS*/}
+                                <span style={{fontWeight: "bold"}}>α: {alpha}</span>
+                                {/*flex: 1：让元素自动填满父容器中所有剩余的可用空间*/}
                                 <div style={{flex: 1}}> {
                                     <Slider
-                                        min={0}
+                                        min={0} s
                                         max={1}
                                         step={0.1}
                                         marks={{0: '0', 1: '1'}}
                                         onChange={(value) => setAlpha(value)}
                                         onChangeComplete={(value) => handleExponentialSmooth(value)} // 只有松开鼠标时才执行计算
+                                        defaultValue={alpha}
                                         // value={alpha}
                                     />
                                 }
                                 </div>
-                            </div>
-                        </Card>
+                            </Card>
+                        )}
+
+                        {isCardVisible && (
+                            <Card className="side-card erros" title={"Forecasting errors"}>
+                                {/* 局部样式控制*/}
+                                {/* 这是 <span> 最核心的用法。它本身没有任何默认样式（没有边距、没有加粗），它的存在就是为了让你能给某一段文字加上 CSS*/}
+                                <span style={{fontWeight: "bold"}}>RMSE: {alpha}</span>
+
+                            </Card>
+                        )}
                     </Space>
                 </Col>
             </Row>
