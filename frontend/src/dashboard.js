@@ -4,6 +4,7 @@ import {HotTable} from '@handsontable/react';
 import Plot from "react-plotly.js";
 import {ImportOutlined, BarChartOutlined} from "@ant-design/icons"; // PlayCircleOutlined
 import Handsontable from "handsontable";
+// import {InlineMath} from "react-katex";
 
 const {Content} = Layout;
 const defaultItems = Handsontable.plugins.ContextMenu.DEFAULT_ITEMS;
@@ -87,7 +88,7 @@ const Dashboard = ({
                                     onClick={handleExponentialSmoothClick}
                                     className="common-button"
                                 >
-                                    Exponential Smoothing
+                                    Statistical methods
                                 </Button>
                             </Space>
                         </Card>
@@ -258,7 +259,8 @@ const Dashboard = ({
                                         // whiteSpace: "nowrap", // 防止 alpha 过长换行
                                         marginBottom: "0px"    // 微调：因为 Slider 的 marks 会撑开高度，这里手动微调对齐轴心
                                     }}>
-                                    α: {alpha}
+                                    {/*<InlineMath math="\alpha" />: */}
+                                        α: {alpha}
                                     </span>
 
                                     {/* 2. 滑动条容器 */}

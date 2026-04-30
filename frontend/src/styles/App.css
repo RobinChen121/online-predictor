@@ -109,6 +109,7 @@ html, body {
     gap: 20px; /* 元素之间的间距 */
 }
 
+
 /* --- 调整 Menu  --- */
 .ant-menu {
     min-width: 200px; /* 避免被其他元素积压 */
@@ -283,22 +284,8 @@ span.ant-menu-title-content {
     filter: brightness(1.2);
 }
 
-/* 针对 Ant Design model 没有深色背景选项，需要自己慢慢调 */
 
-/* ---------------------------------------------------------
-   结果显示区 (Result)
-   --------------------------------------------------------- */
-.result-container {
-    margin-top: 40px; /* 结果区与上方的间距 */
-    padding-top: 30px; /* 结果内部的顶距 */
-    border-top: 1px dashed var(--border-color); /* 虚线分割，暗示这是生成的 */
-}
-
-.result-container h3 {
-    color: var(--text-main);
-    margin-bottom: 20px;
-}
-
+/* ---------------------------------------------------------*/
 /* 针对 Plotly 图表的容器美化 */
 .js-plotly-plot {
     border-radius: 12px; /* 图表容器圆角 */
@@ -308,16 +295,22 @@ span.ant-menu-title-content {
 }
 
 /* ---------------------------------------------------------
-   页脚与主题按钮
+   页脚按钮
    --------------------------------------------------------- */
 .app-footer {
     text-align: center; /* 文字居中 */
     color: var(--text-sec); /* 辅助色 */
     background: transparent !important; /* 背景透明 */
-    padding: 10px; /* 底部留白 */
+    padding-bottom: 10px !important;
     border-top: 2px solid var(--border-color);
 }
+.ant-layout-footer {
+    padding-top: 10px !important;
+}
 
+/* ---------------------------------------------------------
+   主题按钮
+   --------------------------------------------------------- */
 /* 太阳/月亮切换按钮的样式 */
 .theme-button {
     color: var(--text-main) !important; /* 图标颜色适配 */
@@ -397,6 +390,7 @@ span.ant-menu-title-content {
     margin-right: 20px;
 }
 
+
 .goog-te-gadget-icon {
     /* 更改谷歌翻译框外观 */
     background-image: url(https://placehold.it/32) !important;
@@ -451,4 +445,15 @@ span.ant-menu-title-content {
     align-items: center;  /* 关键：垂直居中对齐标签和滑动条 */
     gap: 15px;           /*  标签和滑动条之间的间距 */
     width: 100%;        /* 容器宽度 */
+}
+
+/****************
+ modal
+ */
+.ant-modal-header {
+    text-align: center;
+    /* 添加分割线, important 才会覆盖原有的样式 */
+    border-bottom: 1px solid var(--ant-color-split) !important;
+    /* 增加 header 底部的内边距，让线和文字有呼吸感 */
+    padding-bottom: 16px !important;
 }

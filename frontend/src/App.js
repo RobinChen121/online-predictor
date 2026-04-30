@@ -1,13 +1,32 @@
 import React, {useState, useRef, useEffect} from "react";
-import {Layout, Menu, Button, Tooltip, Space, message, Modal, Select, Form, ConfigProvider, theme, Divider} from "antd";
+import {
+    Layout,
+    Menu,
+    Button,
+    Tooltip,
+    Radio,
+    Space,
+    message,
+    Modal,
+    Select,
+    Form,
+    ConfigProvider,
+    theme,
+    InputNumber,
+    Divider
+} from "antd";
 import {SunOutlined, MoonOutlined} from "@ant-design/icons";
 import {registerAllModules} from 'handsontable/registry';
 import {useNavigate, Routes, Route, Navigate} from "react-router-dom";
+import 'katex/dist/katex.min.css';
+// import {InlineMath} from "react-katex";
+
 // 导入分出去的组件，即js文件
 // ./ 表示 “当前文件所在的目录
 import Dashboard from './dashboard'; // 自动找里面前缀是dashboard的文件
 import AboutPage from './about';
 import {airPassengers, shampooSales} from './dataset'
+import Translate from './translate';
 
 // 注意：如果 import 报错，请使用此路径或在 index.html 引入 CDN
 // import 'handsontable/dist/handsontable.full.css';
@@ -82,6 +101,7 @@ function App() {
     const [RMSE, setRMSE] = useState(null);
     const [MAE, setMAE] = useState(null);
     const [tempDataset, setTempDataset] = useState('air');
+    const [radioOption, setradioOption] = useState(null);
 
 
     useEffect(() => {
@@ -144,6 +164,10 @@ function App() {
         setTableData([...initialData]);
         setColumnOptions([...initialColumnOptions]);
 
+    };
+
+    const radioPredictionSelect = (e) => {
+        setradioOption(e.target.value);
     };
 
     const handleDatasetChange = (key) => {
@@ -233,7 +257,7 @@ function App() {
         }));
 
         setColumnOptions(options);
-        setActiveModal('exponential-smoothing');
+        setActiveModal('statistical-prediction');
     };
 
     const handleExponentialSmooth = async () => {
@@ -247,7 +271,7 @@ function App() {
 
         setColumnOptions(options);
         if (!isCardVisible) {
-            setActiveModal('exponential-smoothing');
+            setActiveModal('statistical-prediction');
         }
 
         // yAxes 存储的是被选中的列索引
@@ -332,8 +356,7 @@ function App() {
         const traces = yIdxArray.map(yIdx => {
             return {
                 // js map 中，第一个参数是当前值，第二个是当前索引
-                x: cleanData.map((_, index) =>
-                    {
+                x: cleanData.map((_, index) => {
                         // 使用 String() 包裹，确保无论哪种情况返回的都是字符串
                         const val = xIdx === 'default_index' ? (index + 1) : cleanData[index][xIdx];
                         // const val = index + 1;
@@ -404,7 +427,6 @@ function App() {
         >
 
             <Layout className={darkMode ? "dark" : "light"}>
-
                 <Header className={`app-header ${darkMode ? "dark" : "light"}`}>
                     <div className="header-container">
                         {/* 左侧：Logo */}
@@ -418,7 +440,8 @@ function App() {
 
                         {/* --- 重点：重新找回的翻译插件容器 --- */}
                         <div className="header-center">
-                            <div id="google_translate_element"></div>
+                            {/*<div id="google_translate_element"></div>*/}
+                            <Translate/>
                         </div>
                         {/* ---------------------------------- */}
 
@@ -485,8 +508,8 @@ function App() {
                 </Modal>
 
                 <Modal
-                    title="Exponential Smoothing Settings"
-                    open={activeModal === 'exponential-smoothing'}
+                    title="Prediction Settings"
+                    open={activeModal === 'statistical-prediction'}
                     destroyOnHidden={true} //  每次打开都重新初始化内部组件
                     onOk={() => {
                         handleExponentialSmooth(yAxes); // 确认时执行绘图逻辑
@@ -494,9 +517,7 @@ function App() {
                     }}
                     onCancel={closeModal}
                 >
-                    <Form
-                        layout="horizontal"
-                    >
+                    <Form layout="horizontal">
                         <Form.Item label="Select data for prediction">
                             <Select
                                 // mode="multiple"
@@ -504,6 +525,72 @@ function App() {
                                 onChange={(val) => setYAxes([val])}
                             />
                         </Form.Item>
+                    </Form>
+
+                    <Radio.Group onChange={radioPredictionSelect} value={radioOption}>
+                        <Space orientation="vertical">
+                            <Radio value={1}>Weighted Average</Radio>
+                            <Radio value={2}>Single Exponential Smoothing</Radio>
+                            <Radio value={3}>Double Exponential Smoothing</Radio>
+                            <Radio value={4}>Triple Exponential Smoothing</Radio>
+                        </Space>
+                    </Radio.Group>
+
+                    <Form
+                        onValuesChange={(changedValues, allValues) => {
+                            if ('alpha' in changedValues) {
+                                setAlpha(changedValues.alpha);
+                            }
+                        }}
+                    >
+                        {/* 动态显示区域 */}
+                        <div style={{marginTop: 16}}>
+                            {radioOption === 1 && (
+                                <Form.Item label="k">
+                                    <InputNumber min={1} step={1} precision={0}/>
+                                </Form.Item>
+                            )}
+
+                            {radioOption === 2 && (
+                                <Form.Item label={'α'} // <InlineMath math="\alpha" />}
+                                           name={'alpha'}
+                                >
+                                    {/*// placeholder="please input the value of α: "*/}
+                                    <InputNumber min={0} max={1} step={0.1}/>
+                                </Form.Item>
+                            )}
+
+                            {radioOption === 3 && (
+                                // <>...</> 是 React Fragment，用来包多个组件（否则 JSX 会报错）
+                                // flex 保证横排
+                                // 这里的数字会被 react 自动转化为 px
+                                <div style={{display: 'flex', gap: 30}}>
+                                    <Form.Item label={'α'} style={{ marginBottom: 0 }}>
+                                        <InputNumber min={0} max={1} step={0.1}/>
+                                    </Form.Item>
+                                    <Form.Item label={'β'} style={{ marginBottom: 0 }}>
+                                        <InputNumber min={0} max={1} step={0.1}/>
+                                    </Form.Item>
+                                </div>
+                            )}
+
+                            {radioOption === 4 && (
+                                // <>...</> 是 React Fragment，用来包多个组件（否则 JSX 会报错）
+                                // flex 保证横排
+                                // 这里的数字会被 react 自动转化为 px
+                                <div style={{display: 'flex', gap: 30}}>
+                                    <Form.Item label={'α'} style={{ marginBottom: 0 }}>
+                                        <InputNumber min={0} max={1} step={0.1}/>
+                                    </Form.Item>
+                                    <Form.Item label={'β'} style={{ marginBottom: 0 }}>
+                                        <InputNumber min={0} max={1} step={0.1}/>
+                                    </Form.Item>
+                                    <Form.Item label={'γ'} style={{ marginBottom: 0 }}>
+                                        <InputNumber min={0} max={1} step={0.1}/>
+                                    </Form.Item>
+                                </div>
+                            )}
+                        </div>
                     </Form>
                     <Divider/>
                 </Modal>

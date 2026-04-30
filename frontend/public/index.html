@@ -28,55 +28,6 @@
     -->
     <title>Welcome to Dr Zhen Chen's predictor</title>
 
-    <script type="text/javascript">
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement(
-                {
-                    pageLanguage: "en",
-                    includedLanguages: "en,zh-CN,zh-TW,ja,ko,de,ru,fr,es,it,pt,hi,ar,fa",
-                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-                },
-                "google_translate_element", // google translator div name
-            );
-        }
-    </script>
-    <script
-            type="text/javascript"
-            src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
-    ></script>
-
-    <script>
-        // 更改谷歌翻译框显示的语言
-        setTimeout(() => {
-            //.VIpgJd-ZVi9od-xl07Ob-lTBxed：这是一个由谷歌自动生成的特定类名。它通常指向翻译小组件中那个可点击的链接元素 (<a>)
-            let langLink = document.querySelector(".VIpgJd-ZVi9od-xl07Ob-lTBxed"); // <a> 元素
-            // 在 <a> 标签内部查找第一个 <span>。谷歌通常把当前的语言名称（如 "English" 或 "中文"）放在这个 <span> 里
-            let langSpan = langLink ? langLink.querySelector("span") : null; // 获取第一个 <span>
-
-            if (!langSpan) return;
-
-            // 1️⃣ 读取 localStorage，恢复用户上次选择的语言
-            let savedLang = localStorage.getItem("selectedLanguage") || "EN"; // 默认 "En"
-            langSpan.innerText = savedLang;
-
-            // 2️⃣ 监听 <span> 的变化
-            let observer = new MutationObserver(() => {
-                // 不再循环 mutations，直接获取最终态
-                let newLang = langSpan.innerText.trim();
-                if (newLang && newLang !== "En") {
-                    localStorage.setItem("selectedLanguage", newLang);
-                }
-            });
-
-            // 监听 <span> 内部的文本变化
-            observer.observe(langSpan, {
-                childList: true,     // 观察子节点变动
-                subtree: true,       // 观察所有后代节点（非常重要，因为文字可能嵌套在深层）
-                characterData: true, // 观察节点内容变动
-            });
-        }, 1000); // 延迟 0.5 秒，确保 Google 翻译插件加载完成
-    </script>
-
     <script src="%PUBLIC_URL%/predict.js"></script>
 </head>
 <body>
