@@ -1,5 +1,5 @@
-import React from "react";
-import {Layout, Row, Col, Card, Space, Button, Slider} from "antd"; // Divider
+import React, {useEffect} from "react";
+import {Layout, Row, Col, Card, Space, Button, Slider, Form} from "antd"; // Divider
 import {HotTable} from '@handsontable/react';
 import Plot from "react-plotly.js";
 import {ImportOutlined, BarChartOutlined} from "@ant-design/icons"; // PlayCircleOutlined
@@ -11,32 +11,38 @@ const defaultItems = Handsontable.plugins.ContextMenu.DEFAULT_ITEMS;
 
 // 传递 app.js 中的函数和变量
 const Dashboard = ({
-                       darkMode, table,
+                       uiState, table,
                        actions, chart
                    }) => {
     // 从 table 里取出所需的变量或函数
     const {
         hotRef,
-        tableData,
-        setTableData,
-        columnOptions,
+        tableConfig,
+        setTableConfig,
         handleSetHeader,
         resetData,
     } = table;
     const {
         handleVisualizeClick,
-        handleExponentialSmoothClick,
-        handleExponentialSmooth,
+        handlePredictClick,
+        handlePredict,
         handleDatasetChangeClick
     } = actions;
     const {
         plot_result,
-        alpha,
-        setAlpha,
-        isCardVisible,
-        RMSE,
-        MAE
+        params,
+        setParams,
+        metrics
     } = chart;
+
+    // 在组件顶部定义 form 实例
+    // Form.useForm() 这个 Hook 返回的是一个数组，数组的第一项才是真正的“表单实例对象
+    const [form] = Form.useForm();
+   // 监听到 params 变化时，手动同步给 form 内部
+   // 这能解决“外部修改 params，滑块不跟着动”的问题
+    useEffect(() => {
+        form.setFieldsValue(params);
+    }, [params, form]);
 
     return (
         <Content className="app-content-fluid">
@@ -85,7 +91,7 @@ const Dashboard = ({
                                     block
                                     // size="large"
                                     // icon={<PlayCircleOutlined/>}
-                                    onClick={handleExponentialSmoothClick}
+                                    onClick={handlePredictClick}
                                     className="common-button"
                                 >
                                     Statistical methods
@@ -112,13 +118,13 @@ const Dashboard = ({
                             <div className="excel-editor-container">
                                 <HotTable
                                     ref={hotRef}
-                                    data={tableData}
+                                    data={tableConfig.tableData}
                                     // map 第一个参数为当前元素本身
-                                    colHeaders={columnOptions.map(options => options.label)}
+                                    colHeaders={tableConfig.columnOptions.map(options => options.label)}
                                     afterChange={(changes) => {
                                         if (changes) {
                                             const updatedData = hotRef.current.hotInstance.getData();
-                                            setTableData(updatedData);
+                                            setTableConfig(prev => ({...prev, tableData: updatedData}));
                                         }
                                     }}
                                     rowHeaders={true}
@@ -185,7 +191,7 @@ const Dashboard = ({
                                             height: 320, // 稍微调整高度以适应布局
                                             paper_bgcolor: 'transparent',
                                             plot_bgcolor: 'transparent',
-                                            font: {color: darkMode ? "#fff" : "#000"},
+                                            font: {color: uiState.darkMode ? "#fff" : "#000"},
                                             margin: {t: 30, r: 30, b: 50, l: 60},
                                             xaxis: {
                                                 // 修正：增加 text 键，并提供后备默认值
@@ -193,7 +199,7 @@ const Dashboard = ({
                                                     text: plot_result.xAxisName || "Time index"
                                                 },
                                                 showline: true,
-                                                linecolor: darkMode ? "#fff" : "#69666a",
+                                                linecolor: uiState.darkMode ? "#fff" : "#69666a",
                                                 linewidth: 2,
                                                 autorange: true,
                                                 zeroline: false,
@@ -201,7 +207,7 @@ const Dashboard = ({
                                             yaxis: {
                                                 title: {text: "Value"},
                                                 showline: true,
-                                                linecolor: darkMode ? "#fff" : "#69666a",
+                                                linecolor: uiState.darkMode ? "#fff" : "#69666a",
                                                 linewidth: 2,
                                                 autorange: true,
                                                 zeroline: false,
@@ -247,50 +253,74 @@ const Dashboard = ({
                             </Space>
                         </Card>
 
-                        {isCardVisible && (
+                        {uiState.isCardVisible && (
                             <Card className="side-card parameter" title={"Parameters"}>
                                 {/* 局部样式控制*/}
                                 {/* 这是 <span> 最核心的用法。它本身没有任何默认样式（没有边距、没有加粗），它的存在就是为了让你能给某一段文字加上 CSS*/}
                                 {/*flex: 1：让元素自动填满父容器中所有剩余的可用空间*/}
-                                <div className = "parameter-slider">
-                                    {/* 1. 标签部分 */}
-                                    <span style={{
-                                        fontWeight: "bold",
-                                        // whiteSpace: "nowrap", // 防止 alpha 过长换行
-                                        marginBottom: "0px"    // 微调：因为 Slider 的 marks 会撑开高度，这里手动微调对齐轴心
-                                    }}>
-                                    {/*<InlineMath math="\alpha" />: */}
-                                        α: {alpha}
-                                    </span>
+                                <div className="parameter-slider">
+                                    <Form
+                                        form={form} // 必须绑定实例，为了跟踪参数值的实时变化
+                                        initialValues={params}
+                                        // 使用 layout="vertical" 可以让标签在滑块上方，"horizontal" 则在左侧
+                                        layout="horizontal"
+                                        // 固定 label 宽度，剩下的全给 slider
+                                        // labelCol={{ flex: "60px" }}
+                                        // 让 wrapper 自动伸展填充剩余空间
+                                        // wrapperCol={{ flex: "auto" }}
+                                        // 关键点 消除 Form.Item 的默认边距影响
+                                        style={{width: '100%'}}
+                                        colon={false} // 去掉冒号
+                                        // 下面有更新change，这里就不用重复更新了
+                                        // onValuesChange={(changed) => {
+                                        //     setParams(prev => ({...prev, ...changed}));
+                                        //     if ('alpha' in changed) {
+                                        //        handlePredict(changed.alpha);
+                                        //     }
+                                        //     // if ('k' in changed) {
+                                        //     //     handlePredict(changed.k);
+                                        //     // }
+                                        // }}
+                                    >
+                                        <Form.Item
+                                            name="alpha"
+                                            // 直接在这里整合文字和动态数值
+                                            label={
+                                                <span style={{fontWeight: "bold"}}>
+                                                 α: <span style={{color: '#1890ff'}}>{params.alpha}</span>
+                                                 </span>
+                                            }
+                                        >
+                                            <Slider
+                                                min={0}
+                                                max={1}
+                                                step={0.1}
+                                                marks={{0: '0', 1: '1'}}
+                                                /* 核心点 1：将状态绑定到 value，实现“反向同步” */
+                                                value={params.alpha}
 
-                                    {/* 2. 滑动条容器 */}
-                                    <div style={{flex: 1}}>
-                                        <Slider
-                                            min={0}
-                                            max={1}
-                                            step={0.1}
-                                            marks={{0: '0', 1: '1'}}
-                                            onChange={(value) => setAlpha(value)}
-                                            onChangeComplete={(value) => handleExponentialSmooth(value)}
-                                            defaultValue={alpha}
-                                            // 如果需要受控，取消下面这一行的注释
-                                            // value={alpha}
-                                            style={{
-                                                margin: "0 0px", // 左右留白，防止滑块圆点超出容器
-                                            }}
-                                        />
-                                    </div>
+                                                // 当用户正在拖动时
+                                                onChange={(val) => {
+                                                    setParams(prev => ({...prev, alpha: val}));
+                                                }}
+                                                // 当用户松开鼠标时，才执行耗时的预测逻辑
+                                                onChangeComplete={(val) => {
+                                                    handlePredict(params.alpha); // 显式传入最新的值
+                                                }}
+                                            />
+                                        </Form.Item>
+                                    </Form>
                                 </div>
                             </Card>
                         )}
 
-                        {isCardVisible && (
+                        {uiState.isCardVisible && (
                             <Card className="side-card erros" title={"Forecasting errors"}>
                                 {/* 局部样式控制*/}
                                 {/* 这是 <span> 最核心的用法。它本身没有任何默认样式（没有边距、没有加粗），它的存在就是为了让你能给某一段文字加上 CSS*/}
-                                <span style={{fontWeight: "bold"}}>RMSE:</span> {RMSE.toFixed(2)}
+                                <span style={{fontWeight: "bold"}}>RMSE:</span> {metrics.RMSE.toFixed(2)}
                                 <br/>
-                                <span style={{fontWeight: "bold"}}>MAE:</span> {MAE.toFixed(2)}
+                                <span style={{fontWeight: "bold"}}>MAE:</span> {metrics.MAE.toFixed(2)}
                             </Card>
                         )}
                     </Space>

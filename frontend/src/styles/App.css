@@ -13,8 +13,8 @@
     --container-bg: #ffffff;
     --text-main: #2d264d; /* 深紫灰文字，比纯黑更高级 */
     --text-sec: #605e68; /* 次要文字 */
-    --primary-color: #6d5995; /* 核心：淡紫 (Violet 600) */
-    --accent-color: #06b6d4; /* 辅助：清爽青 (Cyan 500) */
+    --primary-color: #6d5995 ; /* 核心：淡紫 (Violet 600)#6d5995  淡青色#9cb1e1*/
+    --accent-color: #9cb1e1; /* 辅助：清爽青 (Cyan 500) */
     --header-bg: rgba(252, 250, 255, 0.8);
     --border-color: #cac9cf; /* 浅紫色边框 */
     --card-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.05);
@@ -257,9 +257,9 @@ span.ant-menu-title-content {
 .common-button {
     /* 亮色模式下是深灰黑，深色模式下会根据变量变成亮灰 */
     background: var(--primary-color) !important;
-    color: #fcfaff !important; /* 文字颜色与背景反转 */
+    color: #fbf8f8 !important; /* 文字颜色与背景反转 */
     border: none !important;
-    height: 48px !important;
+    height: 36px !important;
     border-radius: 8px !important;
     font-weight: 500 !important;
     transition: all 0.2s ease !important;

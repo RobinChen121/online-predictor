@@ -18,7 +18,7 @@ import {
 import {SunOutlined, MoonOutlined} from "@ant-design/icons";
 import {registerAllModules} from 'handsontable/registry';
 import {useNavigate, Routes, Route, Navigate} from "react-router-dom";
-import 'katex/dist/katex.min.css';
+// import 'katex/dist/katex.min.css';
 // import {InlineMath} from "react-katex";
 
 // 导入分出去的组件，即js文件
@@ -87,21 +87,31 @@ function App() {
     // map 第一个参数为当前正在处理的元素，第二个为索引
     const initialColumnOptions = headerToOption(initialColumns);
 
-    const [instance, setInstance] = useState(null);
+    const [instance, setWasmInstance] = useState(null);
     const [plot_result, setResult] = useState(null);
-    // 右边小括号的内容为左边第一个变量，传递到函数的值，函数名为第二个元素
-    const [darkMode, setDarkMode] = useState(false);
-    const [activeModal, setActiveModal] = useState(null); // 存储当前的 Modal ID
-    const [columnOptions, setColumnOptions] = useState(initialColumnOptions); // 存储列名
-    const [xAxis, setXAxis] = useState('default_index');               // 横轴选中的列
-    const [yAxes, setYAxes] = useState([]); // 纵轴选中的列（多选）
-    const [tableData, setTableData] = useState(initialData);
-    const [alpha, setAlpha] = useState(0.5);
-    const [isCardVisible, setCardVisible] = useState(false);
-    const [RMSE, setRMSE] = useState(null);
-    const [MAE, setMAE] = useState(null);
-    const [tempDataset, setTempDataset] = useState('air');
-    const [radioOption, setradioOption] = useState(null);
+    // 右边小括号里是初始值，仅在组件挂载时执行
+    const [uiState, setUiState] = useState({
+        darkMode: false,
+        activeModal: null,
+        isCardVisible: false
+    });
+    const [chartConfig, setChartConfig] = useState({
+        xAxis: 'default_index',   // 横轴选中的列
+        yAxes: [] // 纵轴选中的列（多选）
+    });
+    const [tableConfig, setTableConfig] = useState({
+        columnOptions: initialColumnOptions,   // 存储列名
+        tableData: initialData, // 纵轴选中的列（多选）
+        selectDataset: 'air'
+    });
+
+    const [params, setParams] = useState({
+        k: 3,
+        alpha: 0.5,
+        beta: 0.5
+    });
+    const [metrics, setMetrics] = useState({ RMSE: null, MAE: null });
+    const [radioOption, setRaioOption] = useState(null);
 
 
     useEffect(() => {
@@ -129,7 +139,7 @@ function App() {
                 });
 
                 console.log("WASM ready", wasmModule);
-                setInstance(wasmModule);
+                setWasmInstance(wasmModule);
             } catch (e) {
                 console.error("Wasm 初始化失败:", e);
             }
@@ -142,47 +152,77 @@ function App() {
     const hotRef = useRef(null);
 
     // 关闭弹窗的统一方法
-    const closeModal = () => setActiveModal(null);
+    const closeModal = () => setUiState(prevState => ({...prevState, activeModal: null}));
 
-    useEffect(() => {
-        // useEffect 的作用是当网页渲染之后的操作
-        if (columnOptions.length > 1 && yAxes.length === 0) {
-            setYAxes([columnOptions[1].value]);
-        }
-        // [] 表示根据什么变量的变化才生效
-    }, [columnOptions, yAxes]);
+    // useEffect(() => {
+    //     // useEffect 的作用是当网页渲染之后的操作
+    //     // 根据 columnOptions 实时更新选中的YAxes
+    //     if (tableConfig.columnOptions.length > 1 && chartConfig.yAxes.length === 0) {
+    //         setChartConfig(prevState => ({...prevState, yAxes: [tableConfig.columnOptions[1].value]}));
+    //     }
+    //     // [] 表示根据什么变量的变化才生效
+    // }, [tableConfig.columnOptions, chartConfig.yAxes]);
 
 
     // --- 功能逻辑 ---
     const toggleTheme = () => {
-        setDarkMode(!darkMode);
+        setUiState(prevState => ({...prevState, darkMode: !uiState.darkMode}))
     }
 
     const resetData = () => {
         // initialData 是你最初定义的那个空数组或默认数组
         // ... 是扩展运算符，将数组拆开再创建一个新数组
-        setTableData([...initialData]);
-        setColumnOptions([...initialColumnOptions]);
-
+        setTableConfig(prevState => ({...prevState, tableData: initialData}));
+        setTableConfig(prevState => ({...prevState, columnOptions: initialColumnOptions}));
     };
 
     const radioPredictionSelect = (e) => {
-        setradioOption(e.target.value);
+        setRaioOption(e.target.value);
     };
 
     const handleDatasetChange = (key) => {
         const selected = DATASET_CONFIG[key];
 
         // 更新表格数据
-        setTableData(selected.data);
+        setTableConfig(prevState => ({...prevState, tableData: selected.data}));
 
         // 更新标题
-        setColumnOptions(headerToOption(selected.headers));
+        setTableConfig(prevState => ({...prevState, columnOptions: headerToOption(selected.headers)}));
     };
 
     const handleDatasetChangeClick = () => {
-        setActiveModal('select-dataset');
+        setUiState(prevState => ({...prevState, activeModal: 'select-dataset'}));
     }
+
+    const movingAverage = (raw_data, k) => {
+        if (k > raw_data.length) {
+            message.warning('k is too large!');
+            return;
+        }
+
+        const result = [];
+        let windowSum = 0;
+
+        for (let i = 0; i < raw_data.length + 1; i++) {
+            // 加上当前进入窗口的值
+            if (i > 0)
+                windowSum += raw_data[i - 1];
+
+            // 当索引达到 k-1 时，窗口正式填满，开始计算平均值
+            if (i > k - 1) {
+                // 计算平均值并推入结果
+                result.push(windowSum / k);
+
+                // 减去即将移出窗口的值（为下一次迭代做准备）
+                windowSum -= raw_data[i - k];
+            } else {
+                // 窗口未满时，可以选择填充 null 或跳过
+                result.push(null);
+            }
+        }
+        message.success("Moving average prediction finished");
+        return result;
+    };
 
     const computeRMSE = (raw_data, predict_data) => {
         const n = raw_data.length;
@@ -198,7 +238,7 @@ function App() {
         }
 
         const rmse = Math.sqrt(sumSquaredError / n);
-        setRMSE(rmse);
+        setMetrics(prevState => ({...prevState, RMSE: rmse}));
     };
 
     const computeMAE = (raw_data, predict_data) => {
@@ -213,7 +253,7 @@ function App() {
         }
 
         const mae = Math.sqrt(absoluteError / n);
-        setMAE(mae);
+        setMetrics(prevState => ({...prevState,MAE: mae}));
     };
 
     // 更改表头名字
@@ -230,9 +270,8 @@ function App() {
                 colHeaders: newHeaders,
                 data: remainingData
             });
-            setTableData(remainingData);
-            const newOptions = newHeaders.map((item, index) => ({label: item, value: index}));
-            setColumnOptions(newOptions);
+            setTableConfig(prevState => ({...prevState, tableData: remainingData}));
+            setTableConfig(prevState => ({...prevState, columnOptions: newHeaders}));
         }
     };
 
@@ -244,23 +283,17 @@ function App() {
             value: index // 存索引，方便后面取数据
         }));
 
-        setColumnOptions(options);
-        setActiveModal('visualization');
+        setTableConfig(prevState => ({...prevState, columnOptions: options}));
+        setUiState(prevState => ({...prevState, activeModal: 'visualization'}));
     };
 
-    const handleExponentialSmoothClick = () => {
-        // 从 Handsontable 实例获取最新的列头
-        const headers = hotRef.current.hotInstance.getColHeader();
-        const options = headers.map((header, index) => ({
-            label: header || `Column ${index + 1}`,
-            value: index // 存索引，方便后面取数据
-        }));
-
-        setColumnOptions(options);
-        setActiveModal('statistical-prediction');
+    const handlePredictClick = () => {
+        setUiState(prevState => ({...prevState, activeModal: 'statistical-prediction'}));
     };
 
-    const handleExponentialSmooth = async () => {
+    // async 是 Asynchronous（异步） 的缩写。它的核心作用是允许你在函数内部使用 await 关键字，
+    // 从而用“写同步代码的方式”来处理异步操作
+    const handlePredict = async () => {
         const hot = hotRef.current.hotInstance;
         // 从 Handsontable 实例获取最新的列头
         const headers = hot.getColHeader();
@@ -269,54 +302,67 @@ function App() {
             value: index // 存索引，方便后面取数据
         }));
 
-        setColumnOptions(options);
-        if (!isCardVisible) {
-            setActiveModal('statistical-prediction');
+        setTableConfig(prevState => ({...prevState, columnOptions: options}));
+        if (!uiState.isCardVisible) {
+            setUiState(prevState => ({...prevState, activeModal: 'statistical-prediction'}));
         }
 
         // yAxes 存储的是被选中的列索引
-        if (!yAxes) {
+        if (!chartConfig.yAxes) {
             message.warning("Please select one column for prediction");
             return;
         }
+        if (chartConfig.yAxes.length > 1) {
+            message.warning("Please select only one column for prediction");
+            return;
+        }
 
-        const rawData = hot.getDataAtCol(yAxes[0]);
+        const rawData = hot.getDataAtCol(chartConfig.yAxes);
 
         // 过滤掉非数字或空值，转为浮点数
         const numericData = rawData
             .map(val => parseFloat(val))
             .filter(val => !isNaN(val));
 
-        let input_data = null;
         try {
-            function arrayToVectorDouble(arr) {
-                let v = new instance.VectorDouble();
-                arr.forEach(x => v.push_back(x));
-                return v;
+            if (radioOption === 1) {
+                let output = movingAverage(numericData, params.k);
+                plotInputData("default_index", [chartConfig.yAxes], output);
+                computeRMSE(numericData.slice(params.k), output.slice(params.k));
+                computeMAE(numericData.slice(params.k), output.slice(params.k));
             }
 
-            function vectorDoubleToArray(v) {
-                const arr = [];
-                const n = v.size();
-                for (let i = 0; i < n; i++) {
-                    arr.push(v.get(i));
+            if (radioOption !== 1) {
+                function arrayToVectorDouble(arr) {
+                    let v = new instance.VectorDouble();
+                    arr.forEach(x => v.push_back(x));
+                    return v;
                 }
-                return arr;
+
+                function vectorDoubleToArray(v) {
+                    const arr = [];
+                    const n = v.size();
+                    for (let i = 0; i < n; i++) {
+                        arr.push(v.get(i));
+                    }
+                    return arr;
+                }
+
+                let input_data = arrayToVectorDouble(numericData);
+                const model = new instance.Predictor(input_data);
+                let raw_output = model.singleSmooth(params.alpha);
+                let output = vectorDoubleToArray(raw_output);
+                // console.log(output);
+                plotInputData("default_index", [chartConfig.yAxes], output);
+                input_data.delete();
+                raw_output.delete();
+                model.delete();
+
+                computeRMSE(numericData.slice(1), output.slice(1));
+                computeMAE(numericData.slice(1), output.slice(1));
             }
 
-            input_data = arrayToVectorDouble(numericData);
-            const model = new instance.Predictor(input_data);
-            let raw_output = model.singleSmooth(alpha);
-            let output = vectorDoubleToArray(raw_output);
-            // console.log(output);
-            plotInputData("default_index", [yAxes], output);
-            input_data.delete();
-            raw_output.delete();
-            model.delete();
-
-            computeRMSE(numericData.slice(1), output.slice(1));
-            computeMAE(numericData, output);
-            setCardVisible(true);
+            setUiState(prevState => ({...prevState, isCardVisible: true}));
         } catch (error) {
             message.error("Prediction failed.");
         }
@@ -329,13 +375,13 @@ function App() {
             return;
         }
 
-        // 从 Handsontable 引用中获取实时数据实例
-        const hotInstance = hotRef.current.hotInstance;
-        // 获取所有数据（二维数组格式）
-        const tableData = hotInstance.getData(); // 获取所有行的数据 [[row1], [row2]...]
+        // // 从 Handsontable 引用中获取实时数据实例
+        // const hotInstance = hotRef.current.hotInstance;
+        // // 获取所有数据（二维数组格式）
+        // const tableData = hotInstance.getData(); // 获取所有行的数据 [[row1], [row2]...]
 
         // 数据清洗：过滤掉空的无效行
-        const cleanData = tableData.filter(row => {
+        const cleanData = tableConfig.tableData.filter(row => {
                 // 检查 X 轴列是否有值
                 // row["default_index"] 会返回 undefined, 它不等于 null, 也不是空值
                 const hasX = row[xIdx] !== null && row[xIdx] !== '';
@@ -369,7 +415,7 @@ function App() {
                     // 尝试转换为数字，如果转换失败则保持原样（针对非数值轴）
                     return isNaN(parseFloat(val)) ? val : parseFloat(val);
                 }),
-                name: columnOptions[yIdx].label,
+                name: tableConfig.columnOptions[yIdx].label,
                 type: 'scatter',
                 mode: 'lines+markers'
             };
@@ -396,11 +442,10 @@ function App() {
             });
         }
 
-
         // 获取选中的 X 轴列名
         const selectedXName = xIdx === 'default_index'
             ? "Time index"
-            : (columnOptions.find(opt => opt.value === xIdx)?.label || "Time index");
+            : (tableConfig.columnOptions.find(opt => opt.value === xIdx)?.label || "Time index");
         // 更新你的 plot_result 状态，让 Plot 组件渲染
         setResult({
             isCustomPlot: true,
@@ -409,7 +454,7 @@ function App() {
         });
 
         // 提供用户反馈
-        if (!isCardVisible)
+        if (!uiState.isCardVisible)
             message.success(`Successfully visualized ${cleanData.length} data points.`).then(r => '');
     };
 
@@ -418,16 +463,16 @@ function App() {
         <ConfigProvider
             theme={{
                 // 2. 根据你的变量决定使用哪种算法
-                algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+                algorithm: uiState.darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
                 token: {
                     // 试试这个紫色，或者换成你喜欢的任何颜色
-                    colorPrimary: darkMode ? '#9e81d5' : '#311765',
+                    colorPrimary: uiState.darkMode ? '#9e81d5' : '#311765',
                 },
             }}
         >
 
-            <Layout className={darkMode ? "dark" : "light"}>
-                <Header className={`app-header ${darkMode ? "dark" : "light"}`}>
+            <Layout className={uiState.darkMode ? "dark" : "light"}>
+                <Header className={`app-header ${uiState.darkMode ? "dark" : "light"}`}>
                     <div className="header-container">
                         {/* 左侧：Logo */}
                         <div className="header-left">
@@ -449,7 +494,7 @@ function App() {
                             <Space
                                 // size="large"
                             >
-                                <Menu theme={darkMode ? "dark" : "light"} mode="horizontal"
+                                <Menu theme={uiState.darkMode ? "dark" : "light"} mode="horizontal"
                                     // 使用路径作为 key，刷新页面也能正确高亮
                                       selectedKeys={[window.location.pathname]}
                                       onClick={({key}) => navigate(key)}
@@ -460,7 +505,7 @@ function App() {
 
                                 <Tooltip title="Switch Theme">
                                     <Button type="text" onClick={toggleTheme} className={"theme-button"}
-                                            icon={darkMode ? <SunOutlined/> : <MoonOutlined/>}/>
+                                            icon={uiState.darkMode ? <SunOutlined/> : <MoonOutlined/>}/>
                                 </Tooltip>
                             </Space>
                         </div>
@@ -471,9 +516,9 @@ function App() {
                 <Modal
                     title="Select Columns for Visualization"
                     destroyOnHidden={true} //  每次打开都重新初始化内部组件
-                    open={activeModal === 'visualization'}
+                    open={uiState.activeModal === 'visualization'}
                     onOk={() => {
-                        plotInputData(xAxis, yAxes); // 确认时执行绘图逻辑
+                        plotInputData(chartConfig.xAxis, chartConfig.yAxes); // 确认时执行绘图逻辑
                         closeModal();
                     }}
                     onCancel={closeModal}
@@ -483,15 +528,15 @@ function App() {
                     >
                         <p>Select X-Axis (Horizontal):</p>
                         <Select
-                            value={xAxis}
+                            value={chartConfig.xAxis}
                             style={{width: '75%'}}
                             placeholder="Choose one column"
                             options={[
                                 {label: 'Default (1, 2, 3...)', value: 'default_index'},
                                 // ... 叫做扩展运算符，把数组里的每个元素展开放到新数组里
-                                ...columnOptions
+                                ...tableConfig.columnOptions
                             ]}
-                            onChange={(val) => setXAxis(val)}
+                            onChange={(val) => setChartConfig(prevState => ({xAxis: val}))}
                         />
                     </div>
                     <div>
@@ -501,18 +546,18 @@ function App() {
                             mode="multiple" // 允许多选
                             style={{width: '75%'}}
                             placeholder="Choose one or more columns"
-                            options={columnOptions}
-                            onChange={(val) => setYAxes(val)}
+                            options={tableConfig.columnOptions}
+                            onChange={(val) => setChartConfig(prevState => ({...prevState, yAxes: val}))}
                         />
                     </div>
                 </Modal>
 
                 <Modal
                     title="Prediction Settings"
-                    open={activeModal === 'statistical-prediction'}
+                    open={uiState.activeModal === 'statistical-prediction'}
                     destroyOnHidden={true} //  每次打开都重新初始化内部组件
                     onOk={() => {
-                        handleExponentialSmooth(yAxes); // 确认时执行绘图逻辑
+                        handlePredict(); // 确认时执行绘图逻辑
                         closeModal();
                     }}
                     onCancel={closeModal}
@@ -521,8 +566,8 @@ function App() {
                         <Form.Item label="Select data for prediction">
                             <Select
                                 // mode="multiple"
-                                options={columnOptions}
-                                onChange={(val) => setYAxes([val])}
+                                options={tableConfig.columnOptions}
+                                onChange={(val) => setChartConfig(prevState => ({...prevState, yAxes: val}))}
                             />
                         </Form.Item>
                     </Form>
@@ -536,27 +581,40 @@ function App() {
                         </Space>
                     </Radio.Group>
 
+                    {/*onValuesChange 是什么？*/}
+                    {/* 这是 Form 组件的一个钩子函数（Callback）。每当用户在表单里输入一个字符、点击一个单选框或滑动进度条时，*/}
+                    {/* 这个函数就会被触发*/}
                     <Form
-                        onValuesChange={(changedValues, allValues) => {
-                            if ('alpha' in changedValues) {
-                                setAlpha(changedValues.alpha);
-                            }
+                        // onValuesChange={(changedValues, allValues) => {
+                        //     if ('alpha' in changedValues) {
+                        //         // ...prev: 使用展开运算符（Spread Operator）把旧的所有参数“解构”出来
+                        //         // 用新收到的 alpha 值覆盖掉旧的值
+                        //         setParams(prev => ({...prev, alpha: changedValues.alpha}));
+                        //     }
+                        // 自动匹配改变的键值对并更新到 state
+                        onValuesChange={(changedValues) => {
+                            setParams(prev => ({...prev, ...changedValues}));
                         }}
                     >
                         {/* 动态显示区域 */}
                         <div style={{marginTop: 16}}>
                             {radioOption === 1 && (
-                                <Form.Item label="k">
-                                    <InputNumber min={1} step={1} precision={0}/>
+                                // Form 组件中，label 和 name 扮演着完全不同的角色：
+                                // label 是给用户看的（外观），而 name 是给代码看的（逻辑）
+                                <Form.Item label={"k"} name={"k"}>
+                                    {/* placeholder 这里设置淡色的占位值>*/}
+                                    <InputNumber min={1} step={1} precision={0} placeholder={'3'}/>
                                 </Form.Item>
                             )}
 
                             {radioOption === 2 && (
                                 <Form.Item label={'α'} // <InlineMath math="\alpha" />}
-                                           name={'alpha'}
+                                           name={"alpha"}
+                                    // initialValue={0.5}
                                 >
                                     {/*// placeholder="please input the value of α: "*/}
-                                    <InputNumber min={0} max={1} step={0.1}/>
+                                    {/* placeholder 这里设置淡色的占位值*/}
+                                    <InputNumber min={0} max={1} step={0.1} placeholder={'0.5'}/>
                                 </Form.Item>
                             )}
 
@@ -565,10 +623,10 @@ function App() {
                                 // flex 保证横排
                                 // 这里的数字会被 react 自动转化为 px
                                 <div style={{display: 'flex', gap: 30}}>
-                                    <Form.Item label={'α'} style={{ marginBottom: 0 }}>
+                                    <Form.Item label={'α'} style={{marginBottom: 0}}>
                                         <InputNumber min={0} max={1} step={0.1}/>
                                     </Form.Item>
-                                    <Form.Item label={'β'} style={{ marginBottom: 0 }}>
+                                    <Form.Item label={'β'} style={{marginBottom: 0}}>
                                         <InputNumber min={0} max={1} step={0.1}/>
                                     </Form.Item>
                                 </div>
@@ -579,13 +637,13 @@ function App() {
                                 // flex 保证横排
                                 // 这里的数字会被 react 自动转化为 px
                                 <div style={{display: 'flex', gap: 30}}>
-                                    <Form.Item label={'α'} style={{ marginBottom: 0 }}>
+                                    <Form.Item label={'α'} style={{marginBottom: 0}}>
                                         <InputNumber min={0} max={1} step={0.1}/>
                                     </Form.Item>
-                                    <Form.Item label={'β'} style={{ marginBottom: 0 }}>
+                                    <Form.Item label={'β'} style={{marginBottom: 0}}>
                                         <InputNumber min={0} max={1} step={0.1}/>
                                     </Form.Item>
-                                    <Form.Item label={'γ'} style={{ marginBottom: 0 }}>
+                                    <Form.Item label={'γ'} style={{marginBottom: 0}}>
                                         <InputNumber min={0} max={1} step={0.1}/>
                                     </Form.Item>
                                 </div>
@@ -598,9 +656,9 @@ function App() {
                 <Modal
                     title="Select a dataset"
                     destroyOnHidden={true} //  每次打开都重新初始化内部组件
-                    open={activeModal === 'select-dataset'}
+                    open={uiState.activeModal === 'select-dataset'}
                     onOk={() => {
-                        handleDatasetChange(tempDataset);
+                        handleDatasetChange(tableConfig.selectDataset);
                         closeModal();
                     }}
                     onCancel={closeModal}
@@ -609,10 +667,11 @@ function App() {
                         <Form.Item label="Datasets: ">
                             <Select
                                 // mode="multiple"
-                                placeholder="Choose data"
+                                // placeholder="Choose a dataset"
                                 options={datasetOptions}
-                                onChange={(value) => setTempDataset(value)}
-                                defaultValue={tempDataset} // 初始显示
+                                // 这里满的value是数据集的名称，一个字符串
+                                onChange={(value) => setTableConfig(prevState => ({...prevState, selectDataset: value}))}
+                                defaultValue={tableConfig.selectDataset} // 初始显示
                             />
                         </Form.Item>
                     </Form>
@@ -622,28 +681,25 @@ function App() {
                 <Routes>
                     <Route path="/" element={
                         <Dashboard
-                            darkMode={darkMode}
+                            uiState={uiState}
                             table={{
                                 hotRef,
-                                tableData,
-                                setTableData,
-                                columnOptions,
+                                tableConfig,
+                                setTableConfig,
                                 handleSetHeader,
                                 resetData,
                             }}
                             actions={{
                                 handleVisualizeClick,
-                                handleExponentialSmoothClick,
-                                handleExponentialSmooth,
+                                handlePredictClick,
+                                handlePredict,
                                 handleDatasetChangeClick
                             }}
                             chart={{
                                 plot_result,
-                                alpha,
-                                setAlpha,
-                                isCardVisible,
-                                RMSE,
-                                MAE
+                                params,
+                                setParams,
+                                metrics
                             }}
                         />
                     }/>
