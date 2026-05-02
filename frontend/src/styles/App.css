@@ -138,22 +138,22 @@ span.ant-menu-title-content {
   card
  */
 /* 卡片样式美化 */
-.side-card, .main-card, .plot-card {
-    background: var(--container-bg) !important;
+.side-card, .main-card {
     border-radius: 12px !important;
     border-color: var(--border-color);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
     color: var(--text-main);
-    background: var(--bg-color) !important;
+    /*background: var(--bg-color) !important;*/
+    background-color: var(--bg-color);
 }
 
 .main-card {
-    background: var(--container-bg) !important;
+    /*background: var(--container-bg) !important;*/
     border-radius: 12px !important;
     border-color: var(--border-color);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
     color: var(--text-main);
-    background: var(--bg-color) !important;
+    /*background: var(--bg-color) !important;*/
 }
 
 .plot-card {
@@ -161,10 +161,12 @@ span.ant-menu-title-content {
     border-radius: 12px !important;
     border-color: var(--border-color);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-    color: var(--text-main);
     background: var(--bg-color) !important;
     height: 350px;
     padding: 0 !important;
+}
+.dark .plot-card {
+
 }
 
 .excel-editor-container {
@@ -186,8 +188,8 @@ span.ant-menu-title-content {
 
 /* 统一修改这三个 Card 的标题颜色 */
 .side-card .ant-card-head-title,
-.main-card .ant-card-head-title,
-.plot-card .ant-card-head-title {
+.main-card .ant-card-head-title
+{
     color: var(--text-main) !important; /* 使用 !important 确保覆盖 AntD 默认颜色 */
     font-weight: 600; /* 顺便微调一下粗细，让颜色表现更好 */
     text-align: center;

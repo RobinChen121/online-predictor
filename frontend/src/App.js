@@ -1,31 +1,31 @@
-import React, {useState, useRef, useEffect} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {
+    Button,
+    ConfigProvider,
+    Divider,
+    Form,
+    InputNumber,
     Layout,
     Menu,
-    Button,
-    Tooltip,
-    Radio,
-    Space,
     message,
     Modal,
+    Radio,
     Select,
-    Form,
-    ConfigProvider,
+    Space,
     theme,
-    InputNumber,
-    Divider
+    Tooltip,
+    Checkbox
 } from "antd";
-import {SunOutlined, MoonOutlined} from "@ant-design/icons";
+import {MoonOutlined, SunOutlined} from "@ant-design/icons";
 import {registerAllModules} from 'handsontable/registry';
-import {useNavigate, Routes, Route, Navigate} from "react-router-dom";
+import {Navigate, Route, Routes, useNavigate} from "react-router-dom";
 // import 'katex/dist/katex.min.css';
 // import {InlineMath} from "react-katex";
-
 // 导入分出去的组件，即js文件
 // ./ 表示 “当前文件所在的目录
 import Dashboard from './dashboard'; // 自动找里面前缀是dashboard的文件
 import AboutPage from './about';
-import {airPassengers, shampooSales} from './dataset'
+import {airPassengers, iris, shampooSales} from './dataset'
 import Translate from './translate';
 
 // 注意：如果 import 报错，请使用此路径或在 index.html 引入 CDN
@@ -66,42 +66,54 @@ function App() {
     const headerToOption = (headers) =>
         headers.map((item, index) => ({label: item, value: index}));
 
-    const DATASET_CONFIG = {
+    const DATASET_CONFIG = { // 这个字典里的key就是下面options里的value
         air: {
-            name: 'Air Passengers',
+            // name: 'Air Passengers',
             data: airPassengers,
             headers: ['Month', 'Passengers']
         },
         shampoo: {
-            name: 'Shampoo Sales',
+            // name: 'Shampoo Sales',
             data: shampooSales,
             headers: ['Year-month', 'Sales']
+        },
+        iris: {
+            // name: 'iris',
+            data: iris,
+            headers: ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'species'],
         }
     };
     // 定义 Select dataset 的选项
+    // value 给程序员看的，label 给用户看的
     const datasetOptions = [
         {label: 'Air Passengers (1949-1960)', value: 'air'},
-        {label: 'Shampoo Sales (3 Years)', value: 'shampoo'}
+        {label: 'Shampoo Sales (3 Years)', value: 'shampoo'},
+        {label: 'iris data (not time series)', value: 'iris'}
     ];
 
     // map 第一个参数为当前正在处理的元素，第二个为索引
     const initialColumnOptions = headerToOption(initialColumns);
 
     const [instance, setWasmInstance] = useState(null);
-    const [plot_result, setResult] = useState(null);
     // 右边小括号里是初始值，仅在组件挂载时执行
     const [uiState, setUiState] = useState({
         darkMode: false,
         activeModal: null,
-        isCardVisible: false
+        isCardVisible: false,
+        radioPredictOption: null,
+        radioChartOption: null,
+        checkAppendData: false,
     });
     const [chartConfig, setChartConfig] = useState({
         xAxis: 'default_index',   // 横轴选中的列
-        yAxes: [] // 纵轴选中的列（多选）
+        yAxes: [], // 纵轴选中的列（多选）
     });
+    // 不要与上面合并，因为 setPlotResult 可以有很多参数
+    const [plotResult, setPlotResult] = useState(null);
     const [tableConfig, setTableConfig] = useState({
         columnOptions: initialColumnOptions,   // 存储列名
         tableData: initialData, // 纵轴选中的列（多选）
+        // columns: initialColumnOptions.map(col => ({ data: col.value })),
         selectDataset: 'air'
     });
 
@@ -110,10 +122,11 @@ function App() {
         alpha: 0.5,
         beta: 0.5
     });
-    const [metrics, setMetrics] = useState({ RMSE: null, MAE: null });
-    const [radioOption, setRaioOption] = useState(null);
+    const [metrics, setMetrics] = useState({RMSE: null, MAD: null});
 
+    // useEffect(() => {setUiState(prevState => ({...prevState, darkMode: !uiState.darkMode}))}, [uiState.darkMode]);
 
+    // 加载 wasm
     useEffect(() => {
         async function init() {
             // 检查全局变量是否存在（由 public/index.html 中的 <script> 标签注入）
@@ -154,15 +167,12 @@ function App() {
     // 关闭弹窗的统一方法
     const closeModal = () => setUiState(prevState => ({...prevState, activeModal: null}));
 
-    // useEffect(() => {
-    //     // useEffect 的作用是当网页渲染之后的操作
-    //     // 根据 columnOptions 实时更新选中的YAxes
-    //     if (tableConfig.columnOptions.length > 1 && chartConfig.yAxes.length === 0) {
-    //         setChartConfig(prevState => ({...prevState, yAxes: [tableConfig.columnOptions[1].value]}));
-    //     }
-    //     // [] 表示根据什么变量的变化才生效
-    // }, [tableConfig.columnOptions, chartConfig.yAxes]);
-
+    const handleClearYAxes = () => {
+        setChartConfig(prevConfig => ({
+            ...prevConfig, // 展开旧状态，保留 xAxis 等其他属性
+            yAxes: []      // 将 yAxes 覆盖为空数组
+        }));
+    };
 
     // --- 功能逻辑 ---
     const toggleTheme = () => {
@@ -176,8 +186,12 @@ function App() {
         setTableConfig(prevState => ({...prevState, columnOptions: initialColumnOptions}));
     };
 
+    // radio 的选择通过这个函数传递出去
     const radioPredictionSelect = (e) => {
-        setRaioOption(e.target.value);
+        setUiState(prevState => ({...prevState, radioPredictOption: e.target.value}));
+    };
+    const radioChartSelect = (e) => {
+        setUiState(prevState => ({...prevState, radioChartOption: e.target.value}));
     };
 
     const handleDatasetChange = (key) => {
@@ -221,7 +235,38 @@ function App() {
             }
         }
         message.success("Moving average prediction finished");
+
+        // 添加数据到表格里
+        if (uiState.checkAppendData === true) {
+            // Key 是给计算机看的（身份证），Label 是给用户看的（姓名）。
+            const newColKey = `pred_ma_${k}`;
+            const newColLabel = `MA(${k}) Forecast`;
+
+            appendColumn(newColKey, newColLabel, result);
+        }
         return result;
+    };
+
+    const appendColumn = (newColKey, newColLabel, result) => {
+        const updatedTableData = tableConfig.tableData.map((row, index) => ({
+            ...row,
+            [newColKey]: result[index]
+        }));
+
+        // 如果预测结果比原数据多出点，补行
+        if (result.length > tableConfig.tableData.length) {
+            for (let i = tableConfig.tableData.length; i < result.length; i++) {
+                updatedTableData.push({ [newColKey]: result[i] });
+            }
+        }
+
+        setTableConfig(prev => ({
+            ...prev,
+            tableData: updatedTableData,
+            // value：这是逻辑值（通常对应 Key)
+            columnOptions: [...prev.columnOptions, { value: newColKey, label: newColLabel }],
+        }));
+        setUiState(prev => ({ ...prev, checkAppendData: false }));
     };
 
     const computeRMSE = (raw_data, predict_data) => {
@@ -241,7 +286,7 @@ function App() {
         setMetrics(prevState => ({...prevState, RMSE: rmse}));
     };
 
-    const computeMAE = (raw_data, predict_data) => {
+    const computeMAD = (raw_data, predict_data) => {
         const n = raw_data.length;
 
         let absoluteError = 0;
@@ -252,8 +297,8 @@ function App() {
             absoluteError += Math.abs(actual - predicted);
         }
 
-        const mae = Math.sqrt(absoluteError / n);
-        setMetrics(prevState => ({...prevState,MAE: mae}));
+        const MAD = Math.sqrt(absoluteError / n);
+        setMetrics(prevState => ({...prevState, MAD: MAD}));
     };
 
     // 更改表头名字
@@ -271,44 +316,48 @@ function App() {
                 data: remainingData
             });
             setTableConfig(prevState => ({...prevState, tableData: remainingData}));
+            // 此时的“Key”：就是数字索引 0, 1, 2...
             setTableConfig(prevState => ({...prevState, columnOptions: newHeaders}));
         }
     };
 
     const handleVisualizeClick = () => {
+        const hot = hotRef.current.hotInstance;
         // 从 Handsontable 实例获取最新的列头
-        const headers = hotRef.current.hotInstance.getColHeader();
-        const options = headers.map((header, index) => ({
-            label: header || `Column ${index + 1}`,
-            value: index // 存索引，方便后面取数据
-        }));
+        const headers = hot.getColHeader();
+        // 获取每一列真正的数据字段名 (Key)
+        // 还必须获取这个columns才能真正渲染
+        const columnsSettings = hot.getSettings().columns;
+        const options = headers.map((header, index) => {
+            // 尝试获取该列对应的 data 属性（比如 "pred_ma_3"）
+            // 如果没有定义 columns，通常就是 index
+            const colKey = columnsSettings ? columnsSettings[index].data : index;
+
+            return {
+                label: header || `Column ${index + 1}`,
+                value: colKey // 保持 key 的一致性
+            };
+        });
 
         setTableConfig(prevState => ({...prevState, columnOptions: options}));
         setUiState(prevState => ({...prevState, activeModal: 'visualization'}));
     };
 
     const handlePredictClick = () => {
+        handleClearYAxes();
         setUiState(prevState => ({...prevState, activeModal: 'statistical-prediction'}));
+
     };
 
     // async 是 Asynchronous（异步） 的缩写。它的核心作用是允许你在函数内部使用 await 关键字，
     // 从而用“写同步代码的方式”来处理异步操作
     const handlePredict = async () => {
-        const hot = hotRef.current.hotInstance;
-        // 从 Handsontable 实例获取最新的列头
-        const headers = hot.getColHeader();
-        const options = headers.map((header, index) => ({
-            label: header || `Column ${index + 1}`,
-            value: index // 存索引，方便后面取数据
-        }));
-
-        setTableConfig(prevState => ({...prevState, columnOptions: options}));
         if (!uiState.isCardVisible) {
             setUiState(prevState => ({...prevState, activeModal: 'statistical-prediction'}));
         }
 
         // yAxes 存储的是被选中的列索引
-        if (!chartConfig.yAxes) {
+        if (!chartConfig.yAxes || chartConfig.yAxes.length === 0) {
             message.warning("Please select one column for prediction");
             return;
         }
@@ -317,7 +366,12 @@ function App() {
             return;
         }
 
-        const rawData = hot.getDataAtCol(chartConfig.yAxes);
+        // 使用 map 遍历每一行，提取对应的字段
+        const rawData = tableConfig.tableData.map(row => {
+            const val = row[chartConfig.yAxes];
+            // 建议在这里进行数值转换，防止后续计算（如均值）出现字符串拼接错误
+            return isNaN(parseFloat(val)) ? null : parseFloat(val);
+        });
 
         // 过滤掉非数字或空值，转为浮点数
         const numericData = rawData
@@ -325,14 +379,14 @@ function App() {
             .filter(val => !isNaN(val));
 
         try {
-            if (radioOption === 1) {
+            if (uiState.radioPredictOption === 1) {
                 let output = movingAverage(numericData, params.k);
                 plotInputData("default_index", [chartConfig.yAxes], output);
                 computeRMSE(numericData.slice(params.k), output.slice(params.k));
-                computeMAE(numericData.slice(params.k), output.slice(params.k));
+                computeMAD(numericData.slice(params.k), output.slice(params.k));
             }
 
-            if (radioOption !== 1) {
+            if (uiState.radioPredictOption !== 1) {
                 function arrayToVectorDouble(arr) {
                     let v = new instance.VectorDouble();
                     arr.forEach(x => v.push_back(x));
@@ -357,9 +411,18 @@ function App() {
                 input_data.delete();
                 raw_output.delete();
                 model.delete();
+                message.success("Single smoothing prediction finished");
 
                 computeRMSE(numericData.slice(1), output.slice(1));
-                computeMAE(numericData.slice(1), output.slice(1));
+                computeMAD(numericData.slice(1), output.slice(1));
+                // 添加数据到表格里
+                if (uiState.checkAppendData === true) {
+                    // Key 是给计算机看的（身份证），Label 是给用户看的（姓名）。
+                    const newColKey = `pred_1smooth_${params.alpha}`;
+                    const newColLabel = `1smooth(${params.alpha}) Forecast`;
+
+                    appendColumn(newColKey, newColLabel, output);
+                }
             }
 
             setUiState(prevState => ({...prevState, isCardVisible: true}));
@@ -368,95 +431,138 @@ function App() {
         }
     };
 
-    // 可视化当前的输入数据（不运行预测模型）
-    const plotInputData = (xIdx = "default_index", yIdxArray, predict_array) => {
-        if (xIdx === null || !yIdxArray || yIdxArray.length === 0) {
-            message.warning("Please select both X and Y columns").then(r => '');
-            return;
-        }
+    /**
+     * 辅助工具：统一处理数值转换
+     */
+    const parseValue = (val) => {
+        const parsed = parseFloat(val);
+        return isNaN(parsed) ? val : parsed;
+    };
 
-        // // 从 Handsontable 引用中获取实时数据实例
-        // const hotInstance = hotRef.current.hotInstance;
-        // // 获取所有数据（二维数组格式）
-        // const tableData = hotInstance.getData(); // 获取所有行的数据 [[row1], [row2]...]
+    const plotInputData = (xIdx = "default_index", yIdxArray = [], predict_array = []) => {
+        const {tableData, columnOptions} = tableConfig;
+        const isLineChart = uiState.radioChartOption === 1;
 
-        // 数据清洗：过滤掉空的无效行
-        const cleanData = tableConfig.tableData.filter(row => {
-                // 检查 X 轴列是否有值
-                // row["default_index"] 会返回 undefined, 它不等于 null, 也不是空值
-                const hasX = row[xIdx] !== null && row[xIdx] !== '';
-                // console.log(row[xIdx]);
-                // 检查所有选中的 Y 轴列是否有值 (使用 every 确保全都有值，或用 some 只要有一个有值)
-                const hasY = yIdxArray.some(yIdx => row[yIdx] !== null && row[yIdx] !== '');
+        // 检查 X 轴列是否有值
+        // row["default_index"] 会返回 undefined, 它不等于 null, 也不是空值
+        const cleanData = tableData.filter(row => {
+            const hasX = row[xIdx] !== null && row[xIdx] !== '';
+            if (!isLineChart) return hasX; // 直方图只看X
+            // 检查所有选中的 Y 轴列是否有值 (使用 every 确保全都有值，或用 some 只要有一个有值)
+            let hasY = true;
+            if (yIdxArray.length > 0)
+                hasY = yIdxArray.some(yIdx => row[yIdx] !== null && row[yIdx] !== '');
+            else
+                hasY = yIdx => row[yIdx] !== null && row[yIdx] !== '';
+            return hasX && hasY;
+        });
 
-                return hasX && hasY;
-            }
-        );
-
-        // 基本校验：如果没有有效数据，提示用户，不进行后续操作
         if (cleanData.length === 0) {
             return message.warning("Table is empty. Please enter or paste data first.");
         }
 
-        // 构造 Plotly 需要的数据格式
-        const traces = yIdxArray.map(yIdx => {
-            return {
-                // js map 中，第一个参数是当前值，第二个是当前索引
-                x: cleanData.map((_, index) => {
-                        // 使用 String() 包裹，确保无论哪种情况返回的都是字符串
-                        const val = xIdx === 'default_index' ? (index + 1) : cleanData[index][xIdx];
-                        // const val = index + 1;
-                        return String(val);
-                    }
-                ),
+        // --- 构造数据 Traces ---
+        let traces = [];
+        // let xAxisTitle = "Time index";
 
-                y: cleanData.map(row => {
-                    const val = row[yIdx];
-                    // 尝试转换为数字，如果转换失败则保持原样（针对非数值轴）
-                    return isNaN(parseFloat(val)) ? val : parseFloat(val);
-                }),
-                name: tableConfig.columnOptions[yIdx].label,
-                type: 'scatter',
-                mode: 'lines+markers'
-            };
-        });
+        let xAxisTitle = xIdx === 'default_index' ? "Time index" : (columnOptions.find(opt => opt.value === xIdx)?.label || "Time index");
+        // --- 相同的图片设置 ---
+        // plotly 是静态渲染，若想让字体颜色跟随主题切换，非常麻烦，只能在明确主题时确定字体颜色
+        const commonLayout = {
+            template: uiState.darkMode ? 'plotly_dark' : 'plotly',
+            autosize: true,
+            height: 320,
+            paper_bgcolor: 'transparent',
+            plot_bgcolor: 'transparent',
+            margin: {t: 30, r: 30, b: 50, l: 60},
+            // font: {color: uiState.darkMode ? "#fff" : "#000"},
+            xaxis: {
+                title: {text: xAxisTitle},
+                autorange: true,
+                zeroline: false,
+                showgrid: false,
+                linecolor: uiState.darkMode ? "#fff" : "#69666a",
+                linewidth: 2,
+            },
+            yaxis: {
+                title: {text: isLineChart ? "Value" : "Frequency (Count)"},
+                autorange: true,
+                zeroline: false,
+                linecolor: uiState.darkMode ? "#fff" : "#69666a",
+                gridcolor: uiState.darkMode ? "#5a5858" : "#d4d4d5",
+                linewidth: 2,
+            }
+        };
 
-        // 处理 predict_array (假设它是一个数值数组)
-        // 若 predict_array 没有在调用函数时赋值，则它是 undefined, if (predict_array) 返回 false
-        if (predict_array && predict_array.length > 0) {
-            // const lastOriginalX = cleanData.length; // 默认索引情况
+        if (isLineChart || predict_array?.length > 0) {
+            // 预计算 X 轴数据，避免在 yIdxArray.map 内部重复循环
+            const commonX = cleanData.map((row, index) =>
+                xIdx === 'default_index' ? String(index + 1) : String(row[xIdx])
+            );
 
-            // 构造预测数据的 X 轴：接在原始数据索引之后
-            // js map 中，第一个参数是当前值，第二个是当前索引
-            const predictX = predict_array.map((_, i) => String(i + 1));
+            traces = yIdxArray.length > 0 ? yIdxArray.map(yIdx => ({
+                    x: commonX,
+                    y: cleanData.map(row => parseValue(row[yIdx])),
+                    name: columnOptions[yIdx]?.label || yIdx,
+                    type: 'scatter',
+                    mode: 'lines+markers'
+                })) :
+                ({
+                    x: commonX,
+                    y: cleanData.map(row => parseValue(row[yIdxArray])),
+                    name: columnOptions[yIdxArray]?.label || yIdxArray,
+                    type: 'scatter',
+                    mode: 'lines+markers'
+                })
 
-            // 添加预测数据的 Trace, Trace 可以通过 push 添加
-            traces.push({
-                x: predictX,
-                y: predict_array.map(val => isNaN(parseFloat(val)) ? val : parseFloat(val)),
-                name: 'Forecast',
-                type: 'scatter',
-                mode: 'lines+markers',
-                line: {dash: 'dot', color: 'red'}, // 使用虚线和红色区分预测值
-                marker: {symbol: 'diamond'}
+            // 处理预测数据
+            // 处理 predict_array (假设它是一个数值数组)
+            // 若 predict_array 没有在调用函数时赋值，则它是 undefined, if (predict_array) 或者调用lenght时 返回 false
+            if (predict_array?.length > 0) {
+                traces.push({
+                    // x: commonX,
+                    x: predict_array.map((_, i) => String(i + 1)),
+                    y: predict_array.map(parseValue),
+                    name: 'Forecast',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: {dash: 'dot', color: 'red'},
+                    marker: {symbol: 'diamond'}
+                });
+            }
+
+            setPlotResult({
+                showChart: true,
+                data: traces,
+                xAxisName: xAxisTitle,
+                layout: commonLayout,
+            });
+        } else {
+            // 直方图分支
+            xAxisTitle = columnOptions.find(opt => opt.value === xIdx)?.label || "Value";
+            traces = [{
+                x: cleanData.map(row => parseValue(row[xIdx])),
+                type: 'histogram',
+                marker: {color: '#9cb1e1', line: {color: 'white', width: 1}}
+            }];
+
+            setPlotResult({
+                showChart: true,
+                data: traces,
+                xAxisName: xAxisTitle,
+                layout: {
+                    ...commonLayout,
+                    title: {text: "Data distribution"}
+                } // 标题必须通过这个text来定义
             });
         }
 
-        // 获取选中的 X 轴列名
-        const selectedXName = xIdx === 'default_index'
-            ? "Time index"
-            : (tableConfig.columnOptions.find(opt => opt.value === xIdx)?.label || "Time index");
-        // 更新你的 plot_result 状态，让 Plot 组件渲染
-        setResult({
-            isCustomPlot: true,
-            data: traces,
-            xAxisName: selectedXName, // 新增：保存选中的 X 轴标题
-        });
 
-        // 提供用户反馈
-        if (!uiState.isCardVisible)
-            message.success(`Successfully visualized ${cleanData.length} data points.`).then(r => '');
+        if (!uiState.isCardVisible) {
+            message.success(`Successfully visualized ${cleanData.length} data points.`);
+        }
     };
+
 
     return (
         // 1. 用 ConfigProvider 包裹整个应用或 Modal 所在区域
@@ -514,7 +620,7 @@ function App() {
 
                 {/*弹窗组件*/}
                 <Modal
-                    title="Select Columns for Visualization"
+                    title="Select data for Visualization"
                     destroyOnHidden={true} //  每次打开都重新初始化内部组件
                     open={uiState.activeModal === 'visualization'}
                     onOk={() => {
@@ -523,33 +629,75 @@ function App() {
                     }}
                     onCancel={closeModal}
                 >
-                    <div
-                        // style={{marginBottom: 16}}
-                    >
-                        <p>Select X-Axis (Horizontal):</p>
-                        <Select
-                            value={chartConfig.xAxis}
-                            style={{width: '75%'}}
-                            placeholder="Choose one column"
-                            options={[
-                                {label: 'Default (1, 2, 3...)', value: 'default_index'},
-                                // ... 叫做扩展运算符，把数组里的每个元素展开放到新数组里
-                                ...tableConfig.columnOptions
-                            ]}
-                            onChange={(val) => setChartConfig(prevState => ({xAxis: val}))}
-                        />
-                    </div>
-                    <div>
-                        <p>Select Y-Axis (Verticals):</p>
-                        <Select
-                            // value={yAxes}
-                            mode="multiple" // 允许多选
-                            style={{width: '75%'}}
-                            placeholder="Choose one or more columns"
-                            options={tableConfig.columnOptions}
-                            onChange={(val) => setChartConfig(prevState => ({...prevState, yAxes: val}))}
-                        />
-                    </div>
+                    <Radio.Group onChange={radioChartSelect} value={uiState.radioChartOption}>
+                        <Space orientation="vertical">
+                            <Radio value={1}>Line chart</Radio>
+                            <Radio value={2}>Histogram chart</Radio>
+                        </Space>
+                    </Radio.Group>
+                    <Divider/>
+
+                    {uiState.radioChartOption === 1 &&
+                        <Form
+                            layout="vertical"
+                            wrapperCol={{span: 16}} // 24栅格制，8代表占据 1/3 的宽度
+                            initialValues={chartConfig} // 初始化表单值
+                            onValuesChange={(changedValues, allValues) => {
+                                // 只要表单项发生变化，就会触发，allValues 就是最新的配置对象
+                                setChartConfig(allValues);
+                            }}
+                        >
+
+                            {/* Form.Item 的 name 字段自动对应 Select 的选取以及 initialValues={chartConfig}*/}
+                            <Form.Item
+                                label="Select X-Axis (Horizontal)"
+                                name="xAxis"
+                            >
+                                <Select
+                                    placeholder="Choose one column"
+                                    options={[
+                                        {label: 'Default (1, 2, 3...)', value: 'default_index'},
+                                        ...tableConfig.columnOptions
+                                    ]}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                label="Select Y-Axis (Verticals)"
+                                name="yAxes"
+                            >
+                                <Select
+                                    mode="multiple"
+                                    placeholder="Choose one or more columns"
+                                    options={tableConfig.columnOptions}
+                                />
+                            </Form.Item>
+                        </Form>
+                    }
+
+                    {uiState.radioChartOption === 2 &&
+                        <Form
+                            layout="vertical"
+                            wrapperCol={{span: 16}} // 24栅格制，8代表占据 1/3 的宽度
+                            initialValues={chartConfig} // 初始化表单值
+                            onValuesChange={(changedValues, allValues) => {
+                                // 只要表单项发生变化，就会触发，allValues 就是最新的配置对象
+                                setChartConfig(allValues);
+                            }}
+                        >
+
+                            {/* Form.Item 的 name 字段自动对应 Select 的选取以及 initialValues={chartConfig}*/}
+                            <Form.Item
+                                label="Choose one Column"
+                                name="xAxis"
+                            >
+                                <Select
+                                    placeholder="Choose one column"
+                                    options={tableConfig.columnOptions}
+                                />
+                            </Form.Item>
+                        </Form>
+                    }
                 </Modal>
 
                 <Modal
@@ -572,7 +720,7 @@ function App() {
                         </Form.Item>
                     </Form>
 
-                    <Radio.Group onChange={radioPredictionSelect} value={radioOption}>
+                    <Radio.Group onChange={radioPredictionSelect} value={uiState.radioPredictOption}>
                         <Space orientation="vertical">
                             <Radio value={1}>Weighted Average</Radio>
                             <Radio value={2}>Single Exponential Smoothing</Radio>
@@ -598,7 +746,7 @@ function App() {
                     >
                         {/* 动态显示区域 */}
                         <div style={{marginTop: 16}}>
-                            {radioOption === 1 && (
+                            {uiState.radioPredictOption === 1 && (
                                 // Form 组件中，label 和 name 扮演着完全不同的角色：
                                 // label 是给用户看的（外观），而 name 是给代码看的（逻辑）
                                 <Form.Item label={"k"} name={"k"}>
@@ -607,7 +755,7 @@ function App() {
                                 </Form.Item>
                             )}
 
-                            {radioOption === 2 && (
+                            {uiState.radioPredictOption === 2 && (
                                 <Form.Item label={'α'} // <InlineMath math="\alpha" />}
                                            name={"alpha"}
                                     // initialValue={0.5}
@@ -618,7 +766,7 @@ function App() {
                                 </Form.Item>
                             )}
 
-                            {radioOption === 3 && (
+                            {uiState.radioPredictOption === 3 && (
                                 // <>...</> 是 React Fragment，用来包多个组件（否则 JSX 会报错）
                                 // flex 保证横排
                                 // 这里的数字会被 react 自动转化为 px
@@ -632,7 +780,7 @@ function App() {
                                 </div>
                             )}
 
-                            {radioOption === 4 && (
+                            {uiState.radioPredictOption === 4 && (
                                 // <>...</> 是 React Fragment，用来包多个组件（否则 JSX 会报错）
                                 // flex 保证横排
                                 // 这里的数字会被 react 自动转化为 px
@@ -651,6 +799,23 @@ function App() {
                         </div>
                     </Form>
                     <Divider/>
+                    <div style={{marginTop: 16}}>
+                        <Checkbox
+                            // 这里只读取值，不修改值，否则循环渲染
+                            checked={uiState.checkAppendData}
+
+                            // 这里定义点击时才触发的动作
+                            onChange={(e) => {
+                                const isChecked = e.target.checked;
+                                setUiState(prevState => ({
+                                    ...prevState,
+                                    checkAppendData: isChecked
+                                }));
+                            }}
+                        >
+                            Add prediction results to table as a new column
+                        </Checkbox>
+                    </div>
                 </Modal>
 
                 <Modal
@@ -670,7 +835,10 @@ function App() {
                                 // placeholder="Choose a dataset"
                                 options={datasetOptions}
                                 // 这里满的value是数据集的名称，一个字符串
-                                onChange={(value) => setTableConfig(prevState => ({...prevState, selectDataset: value}))}
+                                onChange={(value) => setTableConfig(prevState => ({
+                                    ...prevState,
+                                    selectDataset: value
+                                }))}
                                 defaultValue={tableConfig.selectDataset} // 初始显示
                             />
                         </Form.Item>
@@ -681,7 +849,7 @@ function App() {
                 <Routes>
                     <Route path="/" element={
                         <Dashboard
-                            uiState={uiState}
+                            ui={{uiState}}
                             table={{
                                 hotRef,
                                 tableConfig,
@@ -696,7 +864,7 @@ function App() {
                                 handleDatasetChangeClick
                             }}
                             chart={{
-                                plot_result,
+                                plotResult,
                                 params,
                                 setParams,
                                 metrics

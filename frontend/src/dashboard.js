@@ -11,9 +11,10 @@ const defaultItems = Handsontable.plugins.ContextMenu.DEFAULT_ITEMS;
 
 // 传递 app.js 中的函数和变量
 const Dashboard = ({
-                       uiState, table,
+                       ui, table,
                        actions, chart
                    }) => {
+    const{uiState} = ui;
     // 从 table 里取出所需的变量或函数
     const {
         hotRef,
@@ -29,7 +30,7 @@ const Dashboard = ({
         handleDatasetChangeClick
     } = actions;
     const {
-        plot_result,
+        plotResult,
         params,
         setParams,
         metrics
@@ -38,8 +39,8 @@ const Dashboard = ({
     // 在组件顶部定义 form 实例
     // Form.useForm() 这个 Hook 返回的是一个数组，数组的第一项才是真正的“表单实例对象
     const [form] = Form.useForm();
-   // 监听到 params 变化时，手动同步给 form 内部
-   // 这能解决“外部修改 params，滑块不跟着动”的问题
+    // 监听到 params 变化时，手动同步给 form 内部
+    // 这能解决“外部修改 params，滑块不跟着动”的问题
     useEffect(() => {
         form.setFieldsValue(params);
     }, [params, form]);
@@ -121,9 +122,14 @@ const Dashboard = ({
                                     data={tableConfig.tableData}
                                     // map 第一个参数为当前元素本身
                                     colHeaders={tableConfig.columnOptions.map(options => options.label)}
+                                    // 必须有这个columns才能添加新的一列
+                                    columns={tableConfig.columnOptions.map(opt => ({
+                                        data: opt.value
+                                    }))}
                                     afterChange={(changes) => {
                                         if (changes) {
-                                            const updatedData = hotRef.current.hotInstance.getData();
+                                            // 用getSourceData()，不能用getData，因为后者只返回二维数组
+                                            const updatedData = hotRef.current.hotInstance.getSourceData();
                                             setTableConfig(prev => ({...prev, tableData: updatedData}));
                                         }
                                     }}
@@ -176,43 +182,16 @@ const Dashboard = ({
                             </div>
                         </Card>
 
-                        {/* 下方：可视化结果 (只有在 plot_result 存在时显示) */}
-                        {plot_result && (
+                        {/* 下方：可视化结果 (只有在 plotResult 存在并且里面的showChart为真时显示) */}
+                        {plotResult?.showChart===true && (
                             <Card
                                 // title="Visualization"
                                 className="plot-card">
                                 <div style={{display: 'flex', justifyContent: 'center'}}>
                                     <Plot
-                                        data={plot_result.data}
+                                        data={plotResult.data}
                                         revision={Date.now()} // 关键：强制 Plotly 识别更新
-                                        layout={{
-                                            autosize: true,
-                                            showlegend: true,
-                                            height: 320, // 稍微调整高度以适应布局
-                                            paper_bgcolor: 'transparent',
-                                            plot_bgcolor: 'transparent',
-                                            font: {color: uiState.darkMode ? "#fff" : "#000"},
-                                            margin: {t: 30, r: 30, b: 50, l: 60},
-                                            xaxis: {
-                                                // 修正：增加 text 键，并提供后备默认值
-                                                title: {
-                                                    text: plot_result.xAxisName || "Time index"
-                                                },
-                                                showline: true,
-                                                linecolor: uiState.darkMode ? "#fff" : "#69666a",
-                                                linewidth: 2,
-                                                autorange: true,
-                                                zeroline: false,
-                                            },
-                                            yaxis: {
-                                                title: {text: "Value"},
-                                                showline: true,
-                                                linecolor: uiState.darkMode ? "#fff" : "#69666a",
-                                                linewidth: 2,
-                                                autorange: true,
-                                                zeroline: false,
-                                            },
-                                        }}
+                                        layout = {plotResult.layout}
                                         useResizeHandler={true}
                                         style={{width: "100%", height: "100%"}}
                                     />
@@ -282,7 +261,7 @@ const Dashboard = ({
                                         //     // }
                                         // }}
                                     >
-                                        <Form.Item
+                                        {uiState.radioPredictOption === 2 && <Form.Item
                                             name="alpha"
                                             // 直接在这里整合文字和动态数值
                                             label={
@@ -309,6 +288,38 @@ const Dashboard = ({
                                                 }}
                                             />
                                         </Form.Item>
+                                        }
+
+                                        {uiState.radioPredictOption === 1 && <Form.Item
+                                            name="k"
+                                            // 直接在这里整合文字和动态数值
+                                            label={
+                                                <span style={{fontWeight: "bold"}}>
+                                                 k: <span style={{color: '#1890ff'}}>{params.k}</span>
+                                                 </span>
+                                            }
+                                        >
+                                            <Slider
+                                                min={1}
+                                                max={10}
+                                                step={1}
+                                                marks={{1: '1', 10: '10'}}
+                                                /* 核心点 1：将状态绑定到 value，实现“反向同步” */
+                                                value={params.k}
+
+                                                // 当用户正在拖动时
+                                                // 用 onChange 时注意，一定要是一个 lambda 函数，避免无限渲染
+                                                onChange={(val) => {
+                                                    setParams(prev => ({...prev, k: val}));
+                                                }}
+
+                                                // 当用户松开鼠标时，才执行耗时的预测逻辑
+                                                onChangeComplete={(val) => {
+                                                    handlePredict(params.k); // 显式传入最新的值
+                                                }}
+                                            />
+                                        </Form.Item>
+                                        }
                                     </Form>
                                 </div>
                             </Card>
@@ -320,7 +331,7 @@ const Dashboard = ({
                                 {/* 这是 <span> 最核心的用法。它本身没有任何默认样式（没有边距、没有加粗），它的存在就是为了让你能给某一段文字加上 CSS*/}
                                 <span style={{fontWeight: "bold"}}>RMSE:</span> {metrics.RMSE.toFixed(2)}
                                 <br/>
-                                <span style={{fontWeight: "bold"}}>MAE:</span> {metrics.MAE.toFixed(2)}
+                                <span style={{fontWeight: "bold"}}>MAD:</span> {metrics.MAD.toFixed(2)}
                             </Card>
                         )}
                     </Space>
