@@ -27,7 +27,8 @@ const Dashboard = ({
         handleVisualizeClick,
         handlePredictClick,
         handlePredict,
-        handleDatasetChangeClick
+        handleDatasetChangeClick,
+        handleImportFileClick
     } = actions;
     const {
         plotResult,
@@ -69,7 +70,9 @@ const Dashboard = ({
                                     block
                                     // size="large"
                                     className="common-button"
-                                    icon={<ImportOutlined/>}>
+                                    icon={<ImportOutlined/>}
+                                    onClick={handleImportFileClick}
+                                    >
                                     Import from Excel
                                 </Button>
                                 {/*<Divider/>*/}
@@ -119,6 +122,7 @@ const Dashboard = ({
                             <div className="excel-editor-container">
                                 <HotTable
                                     ref={hotRef}
+                                    manualColumnResize={true} // 可以手动调整宽度
                                     data={tableConfig.tableData}
                                     // map 第一个参数为当前元素本身
                                     colHeaders={tableConfig.columnOptions.map(options => options.label)}
