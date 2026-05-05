@@ -353,7 +353,7 @@ function App() {
                     label: h
                 }));
 
-                // ⭐更新 state
+                // 更新 state
                 setTableConfig(prev => ({
                     ...prev,
                     tableData,
@@ -416,6 +416,19 @@ function App() {
         setUiState(prevState => ({...prevState, activeModal: 'statistical-prediction'}));
 
     };
+
+    const getLinearPredictions = (weights, n) => {
+        const intersect = weights[0];
+        let output = []
+        for (let i = 0; i < n; i++) {
+            let sum = 0;
+            for (let j = 0; j < chartConfig.featureColumns.length; j++) {
+                sum += tableConfig.tableData[i][chartConfig.featureColumns[j]] * weights[j + 1];
+            }
+            output.push(intersect + sum);
+        }
+        return output;
+    }
 
     // async 是 Asynchronous（异步） 的缩写。它的核心作用是允许你在函数内部使用 await 关键字，
     // 从而用“写同步代码的方式”来处理异步操作
@@ -505,13 +518,32 @@ function App() {
                         });
                     });
 
-                    let model = new wasmInstance.Regression(vector_X, input_data);
-                    let weights = model.regression();
-                    console.log('test');
+                    const X = arrayToVector(vector_X);
+                    let model = new wasmInstance.Regression(X, input_data);
+                    let col_num = feature_column_index.length;
+                    let raw_weights = model.regression(col_num);
+                    const weights = vectorToArray(raw_weights);
 
+                    X.delete();
+                    model.delete();
+                    raw_weights.delete();
+                    const output = getLinearPredictions(weights, numericData.length);
+
+                    message.success("Single smoothing prediction finished");
+
+                    computeRMSE(numericData, output);
+                    computeMAD(numericData, output);
+                    // 添加数据到表格里
+                    if (uiState.checkAppendData === true) {
+                        // Key 是给计算机看的（身份证），Label 是给用户看的（姓名）
+                        const newColKey = `pred_regression`;
+                        const columnName = tableConfig.columnOptions[chartConfig.yAxes].label;
+                        const newColLabel = `regression-forecast-${columnName}`;
+
+                        appendColumn(newColKey, newColLabel, output);
+                    }
                 }
             }
-
 
 
             setUiState(prevState => ({...prevState, isCardVisible: true}));
@@ -802,7 +834,7 @@ function App() {
                                 }
                             >
                                 {/* getFieldValue 函数从 form 提取所有记录的值*/}
-                                {({ getFieldValue }) => {
+                                {({getFieldValue}) => {
                                     const isScatter = getFieldValue('isScatter');
                                     const selectedYAxes = getFieldValue('yAxes') || [];
 
@@ -974,16 +1006,17 @@ function App() {
                         </div>
                     </Form>
 
-                    <Divider/>
-                    <Form>
-                        <Form.Item label={'The number of future periods to predict'} name={"n_predict"}>
-                            <InputNumber min={1} step={1} placeholder={1}
-                                         onChange={(val) => setParams(prevState => ({
-                                             ...prevState,
-                                             n_predict: val
-                                         }))}/>
-                        </Form.Item>
-                    </Form>
+                    {uiState.radioPredictOption !== 5 && (
+                        <Form>
+                            <Form.Item label={'The number of future periods to predict'} name={"n_predict"}>
+                                <InputNumber min={1} step={1} placeholder={1}
+                                             onChange={(val) => setParams(prevState => ({
+                                                 ...prevState,
+                                                 n_predict: val
+                                             }))}/>
+                            </Form.Item>
+                        </Form>
+                    )}
                     <Divider/>
                     <div style={{marginTop: 16}}>
                         <Checkbox
