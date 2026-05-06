@@ -423,7 +423,8 @@ function App() {
         for (let i = 0; i < n; i++) {
             let sum = 0;
             for (let j = 0; j < chartConfig.featureColumns.length; j++) {
-                sum += tableConfig.tableData[i][chartConfig.featureColumns[j]] * weights[j + 1];
+                const value = chartConfig.featureColumns[0] === "default_index" ? i + 1 : tableConfig.tableData[i][chartConfig.featureColumns[j]];
+                sum += value * weights[j + 1];
             }
             output.push(intersect + sum);
         }
@@ -511,11 +512,13 @@ function App() {
                     const feature_column_index = chartConfig.featureColumns;
 
                     const vector_X = [];
-                    tableConfig.tableData.forEach(item => {
-                        feature_column_index.forEach(key => {
-                            // 空值视为0
-                            vector_X.push(Number(item[key]) || 0);
-                        });
+                    tableConfig.tableData.forEach((item, index) => {
+                        if (feature_column_index[0] === "default_index")
+                            vector_X.push(index + 1);
+                        else
+                            feature_column_index.forEach(key => {
+                                vector_X.push(Number(item[key]) || 0);
+                            });
                     });
 
                     const X = arrayToVector(vector_X);
@@ -993,7 +996,10 @@ function App() {
                                     <Select
                                         mode="multiple"
                                         placeholder="Choose one or more columns"
-                                        options={tableConfig.columnOptions}
+                                        options={[
+                                            {label: '1, 2, 3...', value: 'default_index'},
+                                            ...tableConfig.columnOptions
+                                        ]}
                                         onChange={(val) => setChartConfig(prevState => ({
                                             ...prevState,
                                             featureColumns: val

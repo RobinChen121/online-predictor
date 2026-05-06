@@ -126,10 +126,7 @@ const Dashboard = ({
                                     data={tableConfig.tableData}
                                     // map 第一个参数为当前元素本身
                                     colHeaders={tableConfig.columnOptions.map(options => options.label)}
-                                    // 必须有这个columns才能添加新的一列
-                                    columns={tableConfig.columnOptions.map(opt => ({
-                                        data: opt.value
-                                    }))}
+
                                     afterChange={(changes) => {
                                         if (changes) {
                                             // 用getSourceData()，不能用getData，因为后者只返回二维数组
@@ -146,6 +143,14 @@ const Dashboard = ({
                                     copyPaste={true}
                                     stretchH={'last'}
                                     className="custom-handsontable"
+                                    afterRemoveCol={(index, amount) => {
+                                        setTableConfig(prev => {
+                                            const newOptions = [...prev.columnOptions];
+                                            newOptions.splice(index, amount);
+                                            return { ...prev, columnOptions: newOptions };
+                                        });
+                                    }}
+                                    // contextMenu={true}
                                     contextMenu={{
                                         items: {
                                             ...defaultItems.reduce((acc, key) => {
